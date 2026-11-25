@@ -995,7 +995,7 @@ function itemInfo(it){
     case 'part':return {name:'지뢰 부품',sub:'제작소 재료 · ₩'+fmt(it.v),ico:'부품',det:'지뢰 해체로 얻는 부품 · 메인 메뉴 제작소에서 부품 n개로 위력 n 지뢰 제작'};
     case 'pick':return {name:'락픽',sub:'설치형 · 잠긴 보안문을 10초 후 개방',ico:'락픽',det:'잠긴 보안문에서 E를 눌러 설치 · 10초 후 문 개방 · 출격 시 원하는 만큼 휴대'};
     case 'weapon':{var d=WEAP[it.w.id],pl=CAL[d.cal].pel;return {name:d.name,sub:it.w.mag.n+'/'+d.mag,ico:'총',det:CAL[d.cal].name+' · 피해 '+Math.round(calDmg(d.cal,1)*d.mul)+(pl>1?'×'+pl:'')+' · '+Math.round(60/d.delay)+'RPM · 탄창 '+d.mag+(CAL[d.cal].note?' · '+CAL[d.cal].note+'탄':'')+(d.slow?' · 이동 −'+Math.round(d.slow*100)+'%':'')}}
-    default:return {name:it.name,sub:'₩'+fmt(it.v),ico:'물품'};
+    default:return it.pkx?{name:it.name,sub:'락픽실 전용 · ₩'+fmt(it.v),ico:'물품',det:'이 맵의 락픽 전용 방에서만 나오는 고유 물품 · ₩'+fmt(it.v)}:{name:it.name,sub:'₩'+fmt(it.v),ico:'물품'};
   }
 }
 function maxStack(it){return it.k==='ammo'?60:it.k==='med'?MEDS[it.id].stack:it.k==='mine'?MINE_STACK:it.k==='part'?PART_STACK:it.k==='mat'?MAT_STACK:it.k==='thr'?THR_STACK:1}
@@ -1006,6 +1006,32 @@ function rollRarity(tier){
   var r=Math.random()*s;
   for(i=0;i<6;i++){r-=ww[i];if(r<0)return rollBoost?Math.min(6,i+2):i+1}
   return 1;
+}
+/* v62: 락픽 전용 방 전용 물품 — 맵마다 고유 3종(5등급 2 + 6등급 1). 다른 곳에서는 나오지 않는다 */
+var PKR_LOOT={
+  o:[['외곽 부지 측량 원본도',5],['폐쇄된 초소의 금고 열쇠함',5],['지휘관의 은제 나침반',6]],
+  d:[['검문소 위조 여권 뭉치',5],['국경 통과 도장 원판',5],['밀수 두목의 금 인장',6]],
+  u:[['도심 재개발 비밀 계약서',5],['붕괴 직전 은행의 보석 트레이',5],['시장의 도시 설계 원본',6]],
+  i:[['공단 설비 도면 원판',5],['특허 시제품 부품 세트',5],['공장주의 금도금 만능 렌치',6]],
+  s:[['사막 기지 암호 지도 두루마리',5],['유전 채굴권 증서',5],['사령관의 황금 쌍안경',6]],
+  e:[['황무지 고대 유물 석판',5],['메마른 수맥 탐사 장치',5],['잊힌 왕의 모래시계',6]],
+  k:[['검투사 챔피언의 허리띠',5],['피 묻은 승리 트로피',5],['백병전 전쟁영웅의 단검 세트',6]],
+  g:[['은행 지점장의 비밀 장부',5],['금고 마스터 키 세트',5],['황금 도금 금고 문짝',6]],
+  w:[['설원 기지 극비 기상 기록',5],['얼음 속에 보존된 시료함',5],['북극 탐사대의 크리스털 나침반',6]],
+  v:[['군 핵심 암호 해독기',5],['작전 지휘부 인가 인장',5],['비밀 병기 설계 마이크로필름',6]],
+  c:[['화학 공단 촉매 레시피 원본',5],['밀폐 보관된 합성 샘플 세트',5],['특허 분자 구조 결정체',6]],
+  l:[['연구소 폐기 예정 데이터 코어',5],['격리 보관 배양체 케이스',5],['소장 전용 양자 연산기',6]],
+  m:[['지뢰 설치 지도 원본',5],['군용 지뢰 탐지기 시제품',5],['폐기지 관리자의 금장 해체 도구',6]],
+  r:[['폐광 우라늄 정제 샘플 케이스',5],['방사선 차폐 납 상자',5],['광산 소유주의 야광 원석',6]],
+  a:[['구조 작전 극비 일정표',5],['구조대장의 훈장 케이스',5],['인질 협상용 금고 다이아몬드',6]],
+  j:[['소장실 비밀 수감 명부',5],['간수장의 은제 열쇠 꾸러미',5],['두목의 금니 수집품',6]],
+  p:[['항구 야간 하역 화물 장부',5],['선장의 황금 컴퍼스',5],['밀수 컨테이너 봉인 원판',6]],
+  h:[['병원 비밀 임상 시험 기록',5],['희귀 약품 냉장 보관함',5],['원장 전용 의료 드론 설계 금고',6]]
+};
+function pkrLoot(rar){
+  var l=PKR_LOOT[SAVE.map]||PKR_LOOT.o,c=l.filter(function(x){return x[1]===rar});
+  var e=pick(c.length?c:l);
+  return {k:'val',name:e[0],r:e[1],v:Math.round(VAL_PRICE[e[1]]*rnd(1.05,1.3)),n:1,pkx:1};
 }
 function genItem(r,inCrate){
   var cat=wpick([['gear',20],['ammo',26],['med',14],['weapon',8],['val',32]]);
@@ -1555,7 +1581,7 @@ function pkrTry(w,h,margins){
       var ix=x+t,iy=y+t,iw=w-2*t,ih=h-2*t,pts=[];
       if(side==='t'||side==='b'){var fy=side==='t'?iy+ih-24:iy+24;[-60,0,60].forEach(function(o){pts.push([cx+o,fy])})}
       else{var fx=side==='l'?ix+iw-24:ix+24;[-50,0,50].forEach(function(o){pts.push([fx,cy+o])})}
-      pts.forEach(function(p,k){addContainer(p[0],p[1],3);var c=conts[conts.length-1];rebuildBoost(c);c.items.push(genItem(k===1?6:5,true));c.name=pick(['락픽 보관 금고','은닉 금고','잠금 보관함'])});
+      pts.forEach(function(p,k){addContainer(p[0],p[1],3);var c=conts[conts.length-1];rebuildBoost(c);c.items.push(k===1?(Math.random()<.6?pkrLoot(6):pkrLoot(5)):(Math.random()<.6?pkrLoot(5):genItem(5,true)));if(k===1)c.items.push(genItem(6,true));c.name=pick(['락픽 보관 금고','은닉 금고','잠금 보관함'])});
       R.pickRoom={x:x,y:y,w:w,h:h,open:false};
       reserved.push({x:cx,y:cy,r:Math.hypot(w,h)/2+30});
       wps=wps.filter(function(q){return !(q.x>x-40&&q.x<x+w+40&&q.y>y-40&&q.y<y+h+40)});
