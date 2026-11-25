@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v65</title>
+<title>Extract Zero v66</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -728,7 +728,7 @@ var THR={
   tRebar:{name:'철근 파편탄',mat:'rebar',n:2,val:6500,rar:3,kind:'cluster',r:194,cr:[194,143],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
   tSteel:{name:'강철 파편 폭탄',mat:'steel',n:3,val:13000,rar:4,kind:'cluster',r:235,cr:[235,184,143],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
   tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:60,hp:160,spd:210,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격 · 체력 160 · 스캐브가 쏘면 맞음(피격 판정 있음) · 60초'},
-  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:45,vr:280,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 45초 · 시야 확보 · 숨은 지뢰 탐지 · N 키로 소리를 내 스캐브 유인'},
+  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:120,vr:560,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 120초 · 시야 반경 560 · 반경 300 안의 숨은 지뢰는 벽·어둠에 상관없이 항상 표시 · N 키로 소리를 내 스캐브 유인'},
   tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:2,val:9000,rar:4,kind:'cluster',r:224,cr:[214,163,133],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
   tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:4,val:22000,rar:5,kind:'cluster',r:265,cr:[265,204,163],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
 };
@@ -2077,7 +2077,7 @@ function updDrones(dt){
     }
   }
 }
-var SCOUT_DET=170;
+var SCOUT_DET=300;
 var CDRONE_VIS=700;
 function hitCombat(d,dmg,hx,hy){
   if(d.hp<=0)return;
@@ -2128,7 +2128,7 @@ function updScouts(dt){
     var bx=mouse.wx,by=mouse.wy;
     d.bx=bx;d.by=by;
     for(var mi=0;mi<R.mines.length;mi++){var hm=R.mines[mi];
-      if(hm.dead||hm.rev||hm.own||dist(d.x,d.y,hm.x,hm.y)>SCOUT_DET||!los(d.x,d.y,hm.x,hm.y))continue;
+      if(hm.dead||hm.rev||hm.own||dist(d.x,d.y,hm.x,hm.y)>SCOUT_DET)continue;
       hm.rev=true;spark(hm.x,hm.y,'#ff5a3a',8);sfxTick(1500,.12,.09,'sine');
       toast('드론이 지뢰를 발견했습니다 · 피하거나 E 로 해체하세요','#ff8a5a')}
     var dd=dist(d.x,d.y,bx,by);
@@ -2143,6 +2143,22 @@ function scoutNoise(){
   if(!scouts.length)toast('전개한 감시 드론이 없습니다','#e8a33a');
   else if(!any)toast('드론 소음 재사용 대기 중','#e8a33a');
   else toast('드론이 소리를 냅니다 · 스캐브 유인','#7fe6ff');
+}
+/* v66: 정찰 드론 지뢰 탐지 반경 — 벽·안개·어둠 위에도 항상 보인다 */
+function drawScoutDet(now,vx,vy,vw,vh){
+  if(!scouts.length||!R||!R.mines)return;
+  var i,j,d,m;
+  for(i=0;i<scouts.length;i++){d=scouts[i];
+    ctx.save();ctx.setLineDash([6,8]);ctx.lineDashOffset=-now*20;ctx.strokeStyle='rgba(255,140,90,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(d.x,d.y,SCOUT_DET,0,TAU);ctx.stroke();ctx.restore();
+    for(j=0;j<R.mines.length;j++){m=R.mines[j];
+      if(m.dead||m.own||!m.rev||dist(d.x,d.y,m.x,m.y)>SCOUT_DET)continue;
+      if(m.x<vx-30||m.x>vx+vw+30||m.y<vy-30||m.y>vy+vh+30)continue;
+      var bl=.5+.5*Math.sin(now*6+(m.ph||0)),cl=m.ty?THR[MTY[m.ty]].col:'224,83,63';
+      ctx.fillStyle='#2b2723';ctx.beginPath();ctx.arc(m.x,m.y,10,0,TAU);ctx.fill();
+      ctx.strokeStyle='rgba('+cl+','+(.6+.4*bl)+')';ctx.lineWidth=2.5;ctx.stroke();
+      ctx.fillStyle='rgba('+cl+','+(.5+.5*bl)+')';ctx.beginPath();ctx.arc(m.x,m.y,3.4,0,TAU);ctx.fill();
+    }
+  }
 }
 function drawScouts(now){
   for(var i=0;i<scouts.length;i++){
@@ -4535,6 +4551,7 @@ function render(){
   ctx.restore();
   }
   if(R.map.lab)drawLabDark(z,vx,vy,now);if(R.map.port)drawPortDark(z,vx,vy,now);
+  drawScoutDet(now,vx,vy,vw,vh);
   drawRanges(vx,vy,vw,vh);
   /* 소리 잔상: 보이지 않는 곳에서 난 스캐브 소리는 노란 잔상으로 남는다 */
   for(i=0;i<ghosts.length;i++){var gh=ghosts[i];
