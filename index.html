@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v42</title>
+<title>Extract Zero v61</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -332,6 +332,11 @@ body.tm .eq{padding:10px}
   #rstBtn::after{content:none!important}
   .menu-in{padding-bottom:90px!important}
 }
+.setsec{font:700 11px var(--f-mono);color:var(--mute);letter-spacing:.1em;margin:16px 0 6px}
+.setrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid var(--line);background:var(--panel2);margin:0 0 8px}
+.setrow .sn{flex:1 1 170px;font:700 14px var(--f-body)}.setrow .sn small{display:block;font:400 11px var(--f-mono);color:var(--mute);margin-top:2px}
+.setrow input[type=range]{flex:1 1 120px;min-width:100px;height:30px;accent-color:var(--accent);touch-action:manipulation}
+.setrow .sv{font:700 12px var(--f-mono);min-width:40px;text-align:right}
 </style>
 
 <div id="stage" tabindex="-1">
@@ -371,10 +376,12 @@ body.tm .eq{padding:10px}
     <div class="center"><div class="sheet">
       <h2>일시정지</h2>
       <p class="why">Esc 로 돌아갑니다. 포기하면 가진 모든 것을 잃습니다.</p>
-      <div class="zoomrow"><span class="zl">화면 확대 / 축소</span><button class="btn" id="zOut" type="button">－</button><input type="range" id="zRange" min="60" max="180" step="5" value="100" aria-label="화면 배율"><button class="btn" id="zIn" type="button">＋</button><b id="zVal">100%</b><button class="btn sm" id="zReset" type="button">100%</button></div>
-      <div class="btns"><button class="btn primary" id="pResume" type="button">계속하기</button><button class="btn" id="pQuit" type="button">포기 (장비 전부 상실)</button></div>
+      <div class="zoomrow"><span class="zl">화면 확대 / 축소</span><button class="btn" id="zOut" type="button">－</button><input type="range" id="zRange" min="25" max="180" step="5" value="100" aria-label="화면 배율"><button class="btn" id="zIn" type="button">＋</button><b id="zVal">100%</b><button class="btn sm" id="zReset" type="button">100%</button></div>
+      <div class="btns"><button class="btn primary" id="pResume" type="button">계속하기</button><button class="btn" id="pSet" type="button">⚙ 설정</button><button class="btn" id="pQuit" type="button">포기 (장비 전부 상실)</button></div>
     </div></div>
   </div>
+
+  <div id="settings" class="screen" hidden style="z-index:30"><div class="center"><div class="sheet" id="setBox"></div></div></div>
 
   <div id="result" class="screen" hidden>
     <div class="center"><div class="sheet" id="resBox"></div></div>
@@ -389,6 +396,7 @@ body.tm .eq{padding:10px}
         <p class="lead">파밍 포인트를 뒤져 전리품을 챙기고, 스캐브를 피해 탈출 지점으로 살아서 나가세요. 죽으면 가진 모든 무장과 아이템을 잃습니다.</p>
         <div class="stats" id="stats"></div>
         <button type="button" class="btn primary quick-start" id="quickStart">&#xBC14;&#xB85C; &#xCD9C;&#xACA9;</button>
+        <button type="button" class="btn" id="setBtn">⚙ 설정</button>
         <button type="button" class="btn rstb" id="rstBtn">&#x26A0; &#xAC8C;&#xC784; &#xCD08;&#xAE30;&#xD654; &#xB370;&#xC774;&#xD130; &#xC804;&#xCCB4; &#xC0AD;&#xC81C;</button>
       </header>
       <section class="ctrl">
@@ -406,7 +414,9 @@ body.tm .eq{padding:10px}
           <kbd>F</kbd><span>가장 비싼 물건 자동 획득 · 가방이 가득 차면 가장 싼 물건과 교환</span>
           <kbd>Tab</kbd><span>인벤토리 (좌클릭 사용·장착, 우클릭 버리기)</span>
           <kbd>H</kbd><span>치료 아이템 사용</span>
-          <kbd>Esc</kbd><span>일시정지 · M 소리 끄기</span>
+          <kbd>B</kbd><span>자폭 드론(C4) 기폭</span>
+          <kbd>N</kbd><span>감시 드론이 소리를 내 스캐브 유인</span>
+          <kbd>Esc</kbd><span>일시정지 · M 전체 소리 끄기 (세부 설정은 ⚙ 설정)</span>
         </div>
         <div class="keys" id="keysT" hidden>
           <kbd>왼쪽 스틱</kbd><span>이동 · 끝까지 밀면 달리기 (화면 왼쪽 아무 데나 누르면 생김)</span>
@@ -692,8 +702,8 @@ var MED_POOL={1:['gauze','bandage','burnk'],2:['bandage','trauma','burnk','gauze
 var VALS=[null,['고철 부품','낡은 라이터','구리선 뭉치'],['건전지 묶음','손목시계','석유 램프'],['군용 무전기','노트북 SSD','위성 안테나'],['GPU 카드','군용 암호 장치','고급 시계','위성 통신 단말','군용 야간투시경','정밀 광학 렌즈'],['금괴','기밀 서류 케이스','희귀 약품 상자','골동 보석 상자','군용 드론 컨트롤러','전략 지도 세트'],['다이아몬드 케이스','프로토타입 칩','정부 USB 드라이브','왕실 유물 상자','양자 암호 모듈','핵심 설계도 금고']];
 var VAL_PRICE=[0,800,2500,10000,40000,160000,600000];
 /* 대인지뢰: 설치형 무기. 가방에서는 5개가 1칸, 출격 구성에서는 최대 10개 */
-var MINE_VAL=15000,MINE_STACK=5,MINE_LD_MAX=10,MINE_PLANT_T=0,MINE_ARM_T=2,MINE_PW_BASE=5,MINE_PW_MAX=12,PART_VAL=2000,PART_STACK=30,DEFUSE_PARTS=[6,10];
-var THR_STACK=4,THR_LD_MAX=6;
+var MINE_VAL=15000,MINE_STACK=5,MINE_LD_MAX=99999,MINE_PLANT_T=0,MINE_ARM_T=2,MINE_PW_BASE=5,MINE_PW_MAX=12,PART_VAL=2000,PART_STACK=30,DEFUSE_PARTS=[6,10];
+var THR_STACK=4,THR_LD_MAX=99999;
 /* 투척류: 재료 n개 → 1개. Q 로 마우스 방향 투척, Z 로 종류 선택. kind: gas/rad=독성 구역(초당 피해 dps) · frost=스캐브 둔화 · flash=기절 · smoke=스캐브 시야 차단 */
 var THR={
   tGas:{name:'독가스 수류탄',mat:'cata',n:3,val:6000,rar:4,kind:'gas',r:120,dur:12,dps:18,col:'150,200,60',desc:'독구름 12초 · 스캐브 초당 18 피해 (나도 중독됨)'},
@@ -704,8 +714,8 @@ var THR={
   tCover:{name:'긴급 엄폐 신호탄',mat:'powder',n:3,val:6000,rar:3,kind:'cover',r:95,dur:10,len:210,th:24,life:28,col:'232,92,64',desc:'던진 곳에 방탄 엄폐벽 28초 + 연막 10초 · 총알·시선 차단 (신호 섬광에 근처 스캐브가 반응)'},
   tHeal:{name:'치료 연막탄',mat:'serum',n:3,val:7000,rar:4,kind:'heal',r:125,dur:14,hps:7,col:'110,230,150',desc:'치료 연막 14초 · 안에 있으면 초당 7 회복 + 화상·중독 완화 · 스캐브 시선 일부 차단'},
   tHealX:{name:'고농도 치료 연막탄',mat:'serum',n:6,val:16000,rar:5,kind:'heal',r:150,dur:20,hps:11,col:'90,235,190',desc:'넓은 치료 연막 20초 · 안에 있으면 초당 11 회복 + 화상·중독 완화'},
-  tDrone:{name:'치료 드론',mat:'dcore',n:3,val:9000,rar:4,kind:'drone',dur:40,hps:4,desc:'던지면 전개 · 40초간 따라다니며 초당 4 회복 · 화상 진화 (최대 2기)'},
-  tDroneX:{name:'정예 치료 드론',mat:'dcore',n:6,val:22000,rar:5,kind:'drone',dur:50,hps:8,cure:1,desc:'50초간 따라다니며 초당 8 회복 · 화상·중독·피폭 완화 (최대 2기)'},
+  tDrone:{name:'치료 드론',mat:'dcore',n:3,val:9000,rar:4,kind:'drone',dur:40,hps:4,desc:'던지면 전개 · 40초간 따라다니며 초당 4 회복 · 화상 진화'},
+  tDroneX:{name:'정예 치료 드론',mat:'dcore',n:6,val:22000,rar:5,kind:'drone',dur:50,hps:8,cure:1,desc:'50초간 따라다니며 초당 8 회복 · 화상·중독·피폭 완화'},
   tSample:{name:'실험체 독성탄',mat:'sample',n:3,val:8000,rar:4,kind:'gas',r:125,dur:11,dps:24,col:'190,120,230',desc:'변이 독구름 11초 · 스캐브 초당 24 피해 (나도 중독됨)'},
   tHerb:{name:'독초 연기탄',mat:'herb',n:2,val:4500,rar:3,kind:'gas',r:115,dur:13,dps:14,col:'120,170,70',desc:'독초 연기 13초 · 스캐브 초당 14 피해 (나도 중독됨)'},
   tRelic:{name:'황무지 낙진탄',mat:'relic',n:4,val:14000,rar:5,kind:'rad',r:135,dur:14,dps:32,col:'230,200,120',desc:'유물 방사 구역 14초 · 스캐브 초당 32 피해 (나도 피폭)'},
@@ -717,21 +727,23 @@ var THR={
   tGold:{name:'황금 파편탄',mat:'gold',n:4,val:11000,rar:4,kind:'cluster',r:120,cr:[120,90,72],cd:[100,68,52],kids:[3,2],col:'255,210,90',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
   tRebar:{name:'철근 파편탄',mat:'rebar',n:3,val:6500,rar:3,kind:'cluster',r:114,cr:[114,84],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
   tSteel:{name:'강철 파편 폭탄',mat:'steel',n:5,val:13000,rar:4,kind:'cluster',r:138,cr:[138,108,84],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
+  tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:60,hp:160,spd:210,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격 · 체력 160 · 스캐브가 쏘면 맞음(피격 판정 있음) · 60초'},
+  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:45,vr:280,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 45초 · 시야 확보 · 숨은 지뢰 탐지 · N 키로 소리를 내 스캐브 유인'},
   tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:4,val:9000,rar:4,kind:'cluster',r:132,cr:[126,96,78],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
   tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:8,val:22000,rar:5,kind:'cluster',r:156,cr:[156,120,96],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
 };
 function thrItem(id,n){return {k:'thr',id:id,n:n,r:THR[id].rar,v:THR[id].val}}
-var MATS={cata:{name:'촉매 앰풀',src:'화학 공단',val:3000,rar:3},ura:{name:'우라늄 광석',src:'방사능 폐광',val:4000,rar:4},frost:{name:'서리 결정',src:'설원 기지',val:3000,rar:3},cuff:{name:'락픽 부품',src:'교도소 폭동',val:2500,rar:3},seal:{name:'컨테이너 봉인',src:'항구 야간',val:2500,rar:3},sample:{name:'연구 샘플',src:'지하 연구소',val:3500,rar:3},gold:{name:'금괴 조각',src:'은행 강도',val:4500,rar:4},key:{name:'암호 키 조각',src:'군 보안 시설',val:3000,rar:3},
+var MATS={sensor:{name:'정찰 센서 모듈',src:'지뢰밭 폐기지',val:2500,rar:3},cata:{name:'촉매 앰풀',src:'화학 공단',val:3000,rar:3},ura:{name:'우라늄 광석',src:'방사능 폐광',val:4000,rar:4},frost:{name:'서리 결정',src:'설원 기지',val:3000,rar:3},cuff:{name:'락픽 부품',src:'교도소 폭동',val:2500,rar:3},seal:{name:'컨테이너 봉인',src:'항구 야간',val:2500,rar:3},sample:{name:'연구 샘플',src:'지하 연구소',val:3500,rar:3},gold:{name:'금괴 조각',src:'은행 강도',val:4500,rar:4},key:{name:'암호 키 조각',src:'군 보안 시설',val:3000,rar:3},
   /* 일반 맵 6곳 전용 재료 (외곽 부지~황무지) */
   powder:{name:'신호 화약',src:'외곽 부지',val:2000,rar:2},stamp:{name:'검문 인장',src:'국경 검문소',val:2500,rar:3},rebar:{name:'철근 다발',src:'폐허 도심',val:2500,rar:3},steel:{name:'정제 강철',src:'폐공단',val:3000,rar:3},herb:{name:'사막 약초',src:'사막 기지',val:2500,rar:3},relic:{name:'황무지 유물 파편',src:'황무지',val:4000,rar:4},blade:{name:'단련 칼날',src:'백병전 구역',val:2500,rar:3},relay:{name:'구조대 보급품',src:'구조 작전지',val:3500,rar:3},serum:{name:'의료 약품 앰풀',src:'병원',val:3000,rar:3},dcore:{name:'의료 드론 모듈',src:'병원',val:4500,rar:4}},MAT_STACK=20;
-var STD_MAT={o:'powder',d:'stamp',u:'rebar',i:'steel',s:'herb',e:'relic',k:'blade',a:'relay'};
+var STD_MAT={m:'sensor',o:'powder',d:'stamp',u:'rebar',i:'steel',s:'herb',e:'relic',k:'blade',a:'relay'};
 function matItem(id,n){return {k:'mat',id:id,n:n,r:MATS[id].rar,v:MATS[id].val}}
 /* 제작 레시피: 맵 고유 재료 n개 → 범용 소모품 1개 */
 var CRAFTS=[{id:'antiGel',mat:'sample',n:2},{id:'fastInj',mat:'sample',n:3},{id:'regen',mat:'sample',n:6},{id:'sprintA',mat:'gold',n:3},{id:'sprintB',mat:'gold',n:6},{id:'visA',mat:'key',n:3},{id:'visB',mat:'key',n:6},{id:'herbK',mat:'herb',n:2},{id:'armU',mat:'rebar',n:3},{id:'guardP',mat:'stamp',n:3},{id:'helI',mat:'steel',n:4},{id:'bodyW',mat:'relic',n:5},{id:'serumP',mat:'serum',n:3},{id:'nanoK',mat:'serum',n:6},{id:'fieldK',mat:'relay',n:2},{id:'scoutV',mat:'relay',n:3},{id:'rescueI',mat:'relay',n:6},{id:'bladeP',mat:'blade',n:4},{id:'powM',mat:'powder',n:2},{id:'catM',mat:'cata',n:2},{id:'frostM',mat:'frost',n:2},{id:'sealM',mat:'seal',n:3}];
-var CRAFT_THR=['tCover','tGas','tRad','tFrost','tFlash','tSmoke','tHeal','tHealX','tDrone','tDroneX','tCluster','tClusterX','tSample','tHerb','tRelic','tSerum','tKey','tRelay','tDcore','tRebar','tSteel'];
+var CRAFT_THR=['tScout','tCombat','tCover','tGas','tRad','tFrost','tFlash','tSmoke','tHeal','tHealX','tDrone','tDroneX','tCluster','tClusterX','tSample','tHerb','tRelic','tSerum','tKey','tRelay','tDcore','tRebar','tSteel'];
 var PICK_RECIPE={mat:'cuff',n:2,val:4000,rar:4};
 /* 특수 지뢰: 대인지뢰 + 투척류 → 터질 때 투척 효과가 함께 발동 (폭발 피해는 MTY_DMG 배). 지뢰 종류 키 = 위력 + 100×종류번호 (0 = 일반) */
-var MTY=[null,'tGas','tRad','tFrost','tFlash','tSmoke'],MTY_NAME=['대인지뢰','독가스 지뢰','방사 지뢰','빙결 지뢰','섬광 지뢰','연막 지뢰'],MTY_DMG=.6;
+var MTY=[null,'tGas','tRad','tFrost','tFlash','tSmoke','tScout'],MTY_NAME=['대인지뢰','독가스 지뢰','방사 지뢰','빙결 지뢰','섬광 지뢰','연막 지뢰','자폭 드론'],MTY_DMG=.6,C4_TY=6,C4_VIS=300,C4_HOVER=34;
 function mkPw(k){return (+k||MINE_PW_BASE)%100||MINE_PW_BASE}
 function mkTy(k){return Math.floor((+k||0)/100)}
 function mkey(o){return (o.pw||MINE_PW_BASE)+100*(o.ty||0)}
@@ -740,8 +752,8 @@ function mineVal(k){var t=mkTy(k);return Math.round(MINE_VAL*mkPw(k)/MINE_PW_BAS
 function mineItem(n,k){k=k||MINE_PW_BASE;var pw=mkPw(k),ty=mkTy(k);return {k:'mine',name:MTY_NAME[ty],r:clamp(Math.ceil(pw/2)+(ty?1:0),1,6),v:mineVal(k),n:n,pw:pw,ty:ty}}
 function partItem(n){return {k:'part',name:'지뢰 부품',r:2,v:PART_VAL,n:n}}
 function mineBlast(k){return 130+8*mkPw(k)}
-function mineDmg(k){return Math.round((70+20*mkPw(k))*(mkTy(k)?MTY_DMG:1))}
-function mineSelf(k){return Math.round((40+9*mkPw(k))*(mkTy(k)?MTY_DMG:1))}
+function mineDmg(k){return Math.round((70+20*mkPw(k))*(mkTy(k)&&mkTy(k)!==C4_TY?MTY_DMG:1))}
+function mineSelf(k){return Math.round((40+9*mkPw(k))*(mkTy(k)&&mkTy(k)!==C4_TY?MTY_DMG:1))}
 var TIERW={1:[44,28,16,8,3,1],2:[16,26,28,19,9,2],3:[3,10,22,28,23,14]};
 var CONT_NAMES={1:['서랍장','가방','공구함','냉장고','쓰레기통'],2:['군용 보급 상자','의료 가방','탄약 상자'],3:['금고','무기 보관함','VIP 가방']};
 var CONT_COL={1:'#6b5a3d',2:'#4f6040',3:'#7a5a22'};
@@ -977,7 +989,7 @@ function itemInfo(it){
     case 'gear':{var g=GEAR[it.t];return {name:g.name+' '+ROMAN[it.c]+'급',sub:it.max?('내구 '+Math.ceil(it.dur)+'/'+it.max):(g.slots[it.c]+'칸'),ico:g.ico}}
     case 'ammo':return {name:CAL[it.cal].name+' '+ROMAN[it.c]+'급',sub:'피해 '+Math.round(calDmg(it.cal,it.c))+(CAL[it.cal].note?' · '+CAL[it.cal].note:''),ico:'탄약'};
     case 'med':{var md=MEDS[it.id];return {name:md.name,sub:medDesc(md),ico:'의료'}}
-    case 'mine':{var mk0=mkey(it),mt0=mkTy(mk0),mx0=mt0?THR[MTY[mt0]].name:'';return {name:mineLabel(mk0),sub:mt0?'설치형 · '+mx0+' 효과 동반':'설치형 · G 즉시 설치',ico:'지뢰',det:'설치형 무기 · 스캐브가 밟으면 폭발(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해)'+(mt0?' + '+mx0+' 효과 발동':'')+' · G 즉시 설치 · E 회수 · ₩'+fmt(it.v)}}
+    case 'mine':{var mk0=mkey(it),mt0=mkTy(mk0),mx0=mt0?THR[MTY[mt0]].name:'';if(mt0===C4_TY)return {name:mineLabel(mk0),sub:'자폭 드론 · 마우스를 따라다님 · B 로 기폭',ico:'C4',det:'자폭 드론 · G 로 전개하면 마우스를 따라다니며 주변 시야 확보 · B 로 기폭(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해) · 90초 · ₩'+fmt(it.v)};return {name:mineLabel(mk0),sub:mt0?'설치형 · '+mx0+' 효과 동반':'설치형 · G 즉시 설치',ico:'지뢰',det:'설치형 무기 · 스캐브가 밟으면 폭발(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해)'+(mt0?' + '+mx0+' 효과 발동':'')+' · G 즉시 설치 · E 회수 · ₩'+fmt(it.v)}}
     case 'thr':{var tt=THR[it.id];return {name:tt.name,sub:tt.desc,ico:'투척',det:tt.desc+' · Q 누르고 조준, 떼면 투척 · Z 종류 변경 · ₩'+fmt(it.v)}}
     case 'mat':{var mt=MATS[it.id];return {name:mt.name,sub:mt.src+' 전용 · ₩'+fmt(it.v),ico:'재료',det:mt.src+'에서만 얻는 제작 재료 · 메인 메뉴 제작소에서 소모품으로 제작'}}
     case 'part':return {name:'지뢰 부품',sub:'제작소 재료 · ₩'+fmt(it.v),ico:'부품',det:'지뢰 해체로 얻는 부품 · 메인 메뉴 제작소에서 부품 n개로 위력 n 지뢰 제작'};
@@ -1011,15 +1023,22 @@ function genItem(r,inCrate){
 }
 
 /* ============ AUDIO ============ */
-var AC=null,muted=false,noiseBuf=null;
+var AC=null,noiseBuf=null;
+/* ===== 설정(소리 3종 분리 · 사거리 표시 5종) — SAVE.set 에 저장 ===== */
+var SET=(function(){
+  var o={snd:{all:1,gun:1,fx:1,gv:100,fv:100},rng:{me:0,foe:0,knife:0,foeM:0,noise:0}},sv=SAVE.set;
+  if(sv&&typeof sv==='object')['snd','rng'].forEach(function(g){if(sv[g]&&typeof sv[g]==='object')Object.keys(o[g]).forEach(function(k){if(typeof sv[g][k]==='number')o[g][k]=sv[g][k]})});
+  return o;
+})();
+function saveSet(){SAVE.set=SET;persist()}
 function actx(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();var n=AC.sampleRate*0.4,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=Math.random()*2-1;noiseBuf=b}catch(e){AC=null}}return AC}
 function sfxShot(freq,len,vol){
-  var a=actx();if(!a||muted||vol<=0.02)return;
+  vol*=SET.snd.gv/100;var a=(SET.snd.all&&SET.snd.gun&&vol>0.02)?actx():null;if(!a)return;
   try{var s=a.createBufferSource();s.buffer=noiseBuf;var f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;var g=a.createGain();var t=a.currentTime;
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+len);s.connect(f);f.connect(g);g.connect(a.destination);s.start(t);s.stop(t+len+0.02)}catch(e){}
 }
 function sfxTick(freq,len,vol,type){
-  var a=actx();if(!a||muted)return;
+  vol*=SET.snd.fv/100;var a=(SET.snd.all&&SET.snd.fx&&vol>0.002)?actx():null;if(!a)return;
   try{var o=a.createOscillator();o.type=type||'square';o.frequency.value=freq;var g=a.createGain();var t=a.currentTime;
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+len);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+len+0.02)}catch(e){}
 }
@@ -1033,7 +1052,7 @@ var cv=$('cv'),ctx=cv.getContext('2d'),mmc=$('mm'),mctx=mmc.getContext('2d');
   if(m){var sz=parseFloat(m[1]),on=sz*SC;
     if(on<13){var k=Math.min(2,13/on);this.font=f.replace(m[0],(sz*k).toFixed(1)+'px');ft.call(this,t,x,y,mw);this.font=f;return}}
   return ft.call(this,t,x,y,mw)}})();
-var CW=800,CH=600,DPR=1,SC=1,BASE=1,ZM=1;ZM=clamp(+SAVE.zoom||1,.6,1.8);
+var CW=800,CH=600,DPR=1,SC=1,BASE=1,ZM=1;ZM=clamp(+SAVE.zoom||1,.25,1.8);
 var state='menu',paused=false,sneakOn=false;
 var R=null,P=null,solids=[],floors=[],blds=[],conts=[],scavs=[],bullets=[],parts=[],floaters=[],ghosts=[],decals=[],patches=[],tufts=[],wps=[],spawns=[],extracts=[],reserved=[],prints=[],alarms=[];
 var cam={x:0,y:0},shake=0,mmStatic=null,lootC=null;
@@ -1876,7 +1895,7 @@ function drawLabDark(z,vx,vy,now){
   c.fillStyle='rgba(2,4,6,.86)';c.fillRect(0,0,labC.width,labC.height);
   c.setTransform(z,0,0,z,-vx*z,-vy*z);c.globalCompositeOperation='destination-out';
   var LRs=LAB_R*(P.scopeM||1),g=c.createRadialGradient(P.x,P.y,LRs*.3,P.x,P.y,LRs);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');
-  c.fillStyle=g;c.beginPath();c.arc(P.x,P.y,LRs,0,TAU);c.fill();darkCone(c,LAB_R);
+  c.fillStyle=g;c.beginPath();c.arc(P.x,P.y,LRs,0,TAU);c.fill();darkCone(c,LAB_R);rvHoles(c);
   for(i=0;i<L.cells.length;i++){var ce=L.cells[i];if(!ce.on)continue;
     c.fillStyle='rgba(0,0,0,'+(.9+.04*Math.sin(now*13+i*2))+')';c.fillRect(ce.x,ce.y,ce.w,ce.h)}
   c.globalCompositeOperation='source-over';
@@ -2032,6 +2051,86 @@ function updDrones(dt){
     }
   }
 }
+var SCOUT_DET=170;
+var CDRONE_VIS=700;
+function hitCombat(d,dmg,hx,hy){
+  if(d.hp<=0)return;
+  d.hp-=dmg;d.hit=.15;addFloater(d.x,d.y-18,'-'+Math.round(dmg),'#ff8a3a');spark(hx==null?d.x:hx,hy==null?d.y:hy,'#ffd27a',5);sfxTick(900,.05,.07,'square');
+  if(d.hp<=0){blasts.push({x:d.x,y:d.y,t:0,r:60});spark(d.x,d.y,'#ffb347',12);toast('전투 드론 파괴됨','#e0533f')}
+}
+function updCombat(dt){
+  for(var i=cdrones.length-1;i>=0;i--){
+    var d=cdrones[i];d.t+=dt;if(d.hit>0)d.hit-=dt;if(d.flash>0)d.flash-=dt;if(d.fireT>0)d.fireT-=dt;
+    if(d.hp<=0){cdrones.splice(i,1);continue}
+    if(d.t>=d.dur){cdrones.splice(i,1);toast('전투 드론 가동 종료','#e8a33a');continue}
+    var bx=mouse.wx,by=mouse.wy,dd=dist(d.x,d.y,bx,by);
+    if(dd>6){var st=Math.min(dd,Math.max(d.spd*.25,Math.min(d.spd,dd*5))*dt);d.x+=(bx-d.x)/dd*st;d.y+=(by-d.y)/dd*st}
+    var tg=null,bd=520;
+    for(var j=0;j<scavs.length;j++){var sc=scavs[j];if(sc.dead||(sc.cage&&sc.cage.locked))continue;
+      var q=dist(d.x,d.y,sc.x,sc.y);if(q<bd&&los(d.x,d.y,sc.x,sc.y)&&!(thrZ.length&&smokeBlock(d.x,d.y,sc.x,sc.y))){bd=q;tg=sc}}
+    if(tg){
+      var want=Math.atan2(tg.y-d.y,tg.x-d.x),df=want-d.ang;while(df>Math.PI)df-=TAU;while(df<-Math.PI)df+=TAU;
+      d.ang+=clamp(df,-dt*9,dt*9);
+      if(d.fireT<=0&&Math.abs(df)<.25){
+        d.fireT=.14;d.flash=.05;
+        var an=d.ang+(Math.random()+Math.random()-1)*.06;
+        bullets.push({x:d.x+Math.cos(d.ang)*16,y:d.y+Math.sin(d.ang)*16,vx:Math.cos(an)*1000,vy:Math.sin(an)*1000,dmg:17,cls:3,dist:0,maxD:560,rng:560,src:'a',fall:.18});
+        sfxTick(1900,.04,.05,'square');alertScavs(d.x,d.y,450);
+      }
+    }
+  }
+}
+function drawCombat(now){
+  for(var i=0;i<cdrones.length;i++){
+    var d=cdrones[i],ra=now*40+d.ph;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(d.x,d.y+16,10,4,0,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(255,170,90,.8)';ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(d.x-Math.cos(ra)*13,d.y-Math.sin(ra)*13);ctx.lineTo(d.x+Math.cos(ra)*13,d.y+Math.sin(ra)*13);
+    ctx.moveTo(d.x-Math.sin(ra)*13,d.y+Math.cos(ra)*13);ctx.lineTo(d.x+Math.sin(ra)*13,d.y-Math.cos(ra)*13);ctx.stroke();
+    ctx.strokeStyle='#222';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+Math.cos(d.ang)*17,d.y+Math.sin(d.ang)*17);ctx.stroke();
+    ctx.fillStyle=d.hit>0?'#ffffff':'#ffb27a';ctx.beginPath();ctx.arc(d.x,d.y,7.5,0,TAU);ctx.fill();ctx.strokeStyle='#4a1a0a';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#e0533f';ctx.beginPath();ctx.arc(d.x,d.y,2.6,0,TAU);ctx.fill();
+    ctx.save();ctx.strokeStyle='rgba(255,120,80,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,TAU);ctx.stroke();ctx.restore();
+    if(d.flash>0){ctx.fillStyle='rgba(255,230,150,.9)';ctx.beginPath();ctx.arc(d.x+Math.cos(d.ang)*21,d.y+Math.sin(d.ang)*21,4,0,TAU);ctx.fill()}
+    var k=clamp(d.hp/d.mhp,0,1);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(d.x-14,d.y-22,28,4);ctx.fillStyle=k>.5?'#79b665':k>.25?'#e8a33a':'#e0533f';ctx.fillRect(d.x-14,d.y-22,28*k,4);
+  }
+}
+function updScouts(dt){
+  for(var i=scouts.length-1;i>=0;i--){
+    var d=scouts[i];d.t+=dt;if(d.nc>0)d.nc-=dt;
+    if(d.t>=d.dur){scouts.splice(i,1);toast((d.bomb?'자폭 드론':'감시 드론')+' 가동 종료','#e8a33a');continue}
+    var bx=mouse.wx,by=mouse.wy;
+    d.bx=bx;d.by=by;
+    for(var mi=0;mi<R.mines.length;mi++){var hm=R.mines[mi];
+      if(hm.dead||hm.rev||hm.own||dist(d.x,d.y,hm.x,hm.y)>SCOUT_DET||!los(d.x,d.y,hm.x,hm.y))continue;
+      hm.rev=true;spark(hm.x,hm.y,'#ff5a3a',8);sfxTick(1500,.12,.09,'sine');
+      toast('드론이 지뢰를 발견했습니다 · 피하거나 E 로 해체하세요','#ff8a5a')}
+    var dd=dist(d.x,d.y,bx,by);
+    if(dd>4){var st=Math.min(dd,Math.max(d.spd*.25,Math.min(d.spd,dd*5))*dt);d.x+=(bx-d.x)/dd*st;d.y+=(by-d.y)/dd*st}
+  }
+}
+function scoutNoise(){
+  var any=false;
+  for(var i=0;i<scouts.length;i++){var d=scouts[i];if(d.nc>0)continue;
+    any=true;d.nc=3;alertScavs(d.x,d.y,1000);
+    blasts.push({x:d.x,y:d.y,t:0,r:160});sfxTick(1800,.25,.12,'square');sfxTick(1300,.3,.1,'square')}
+  if(!scouts.length)toast('전개한 감시 드론이 없습니다','#e8a33a');
+  else if(!any)toast('드론 소음 재사용 대기 중','#e8a33a');
+  else toast('드론이 소리를 냅니다 · 스캐브 유인','#7fe6ff');
+}
+function drawScouts(now){
+  for(var i=0;i<scouts.length;i++){
+    var d=scouts[i],ra=now*34+d.ph;
+    ctx.save();ctx.setLineDash([4,6]);ctx.strokeStyle='rgba(255,120,80,.22)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(d.x,d.y,SCOUT_DET,0,TAU);ctx.stroke();ctx.restore();
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(d.x,d.y+16,9,4,0,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(200,245,255,.8)';ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(d.x-Math.cos(ra)*12,d.y-Math.sin(ra)*12);ctx.lineTo(d.x+Math.cos(ra)*12,d.y+Math.sin(ra)*12);
+    ctx.moveTo(d.x-Math.sin(ra)*12,d.y+Math.cos(ra)*12);ctx.lineTo(d.x+Math.sin(ra)*12,d.y-Math.cos(ra)*12);ctx.stroke();
+    ctx.fillStyle=d.bomb?'#ffb27a':'#bfeeff';ctx.beginPath();ctx.arc(d.x,d.y,6.5,0,TAU);ctx.fill();ctx.strokeStyle=d.bomb?'#4a1a0a':'#14303a';ctx.lineWidth=1.5;ctx.stroke();
+    if(d.bomb)rngLabel(d.x,d.y-20,'B 기폭','rgba(255,200,120,1)');
+    ctx.fillStyle=d.bomb?'#e0533f':'#1f6f8a';ctx.beginPath();ctx.arc(d.x,d.y,2.6,0,TAU);ctx.fill();
+  }
+}
 function drawDrones(now){
   for(var i=0;i<drones.length;i++){
     var dr=drones[i],dp=.5+.5*Math.sin(now*8+dr.ph);
@@ -2134,13 +2233,13 @@ function explodeMine(m,by){
     s.hp-=sd;s.hpShow=2.5;addFloater(s.x,s.y-18,'폭발 -'+sd,'#ffb347');
     if(s.hp<=0)killScav(s)}
   for(i=0;i<R.mines.length;i++){var o=R.mines[i];if(o.dead||o.fuse>=0)continue;if(dist(o.x,o.y,m.x,m.y)<Math.max(75,BR*.62))o.fuse=.2+Math.random()*.2}
-  if(m.ty)landThr({id:MTY[m.ty],tx:m.x,ty:m.y,ang:0});
+  if(m.ty&&m.ty!==C4_TY)landThr({id:MTY[m.ty],tx:m.x,ty:m.y,ang:0});
   alertScavs(m.x,m.y,1700);
   if(dp<BR&&(dp<30||los(m.x,m.y,P.x,P.y))){
     var pd=Math.round(mineSelf(pw)*(1-clamp((dp-20)/(BR-20),0,1)*.8));
     P.hp-=pd;P.hurt=.7;P.hitT=.9;P.hitDir=Math.atan2(P.y-m.y,P.x-m.x)+Math.PI;
     addFloater(P.x,P.y-20,'폭발 -'+pd,'#ff8a3a');
-    toast(by==='p'?'지뢰를 밟았습니다! -'+pd:'지뢰 폭발에 휘말렸습니다 -'+pd,'#e0533f');
+    toast(by==='p'?'지뢰를 밟았습니다! -'+pd:by==='r'?'C4 폭발에 휘말렸습니다 -'+pd:'지뢰 폭발에 휘말렸습니다 -'+pd,'#e0533f');
     if(P.hp<=0){P.hp=0;endRaid('mine')}
   }
 }
@@ -2165,7 +2264,7 @@ function updMines(dt){
     if(!m.own&&d<m.r){explodeMine(m,'p');if(state!=='raid')return;continue}
     if(!m.own&&d<near)near=d;
     if(!m.own&&P.sneak&&d<70&&!m.rev){m.rev=true;if(!R.mineSeen){R.mineSeen=true;toast('지뢰 발견! 피하거나 E 를 0.5초 눌러 해체하세요 · 쏘면 터집니다','#e0533f')}}
-    if(m.arm>0)continue;
+    if(m.arm>0||m.ty===C4_TY)continue;
     for(j=0;j<scavs.length;j++){var sc=scavs[j];if(sc.dead||Math.abs(sc.x-m.x)>m.r||Math.abs(sc.y-m.y)>m.r)continue;
       if(dist(sc.x,sc.y,m.x,m.y)<m.r){explodeMine(m,'s');break}}
   }
@@ -2185,6 +2284,13 @@ function drawMines(now,vx,vy,vw,vh){
   }
   for(i=0;i<R.mines.length;i++){m=R.mines[i];if(m.dead||!m.rev)continue;
     if(m.x<vx-30||m.x>vx+vw+30||m.y<vy-30||m.y>vy+vh+30||!canSee(m.x,m.y))continue;
+    if(m.ty===C4_TY){
+      var hv=dist(mouse.wx,mouse.wy,m.x,m.y)<C4_HOVER,lb=.5+.5*Math.sin(now*5+m.ph);
+      ctx.fillStyle='#2b312d';ctx.fillRect(m.x-10,m.y-7,20,14);ctx.strokeStyle=hv?'#ffd24a':'rgba(120,220,240,.85)';ctx.lineWidth=2;ctx.strokeRect(m.x-10,m.y-7,20,14);
+      ctx.fillStyle='rgba(120,230,250,'+(.55+.4*lb)+')';ctx.beginPath();ctx.arc(m.x-3,m.y,3.4,0,TAU);ctx.fill();
+      ctx.fillStyle='rgba(255,70,50,'+(.3+.7*lb)+')';ctx.beginPath();ctx.arc(m.x+6,m.y,2.2,0,TAU);ctx.fill();
+      if(hv){ctx.strokeStyle='rgba(255,210,74,.9)';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(m.x,m.y,C4_HOVER-6,0,TAU);ctx.stroke();ctx.setLineDash([]);rngLabel(m.x,m.y-22,'B 기폭','rgba(255,225,120,1)')}
+      continue}
     var unarmed=m.own&&m.arm>0,bl=.5+.5*Math.sin(now*(unarmed?14:6)+m.ph),cl=m.own?'79,209,197':'224,83,63',cd=m.own?'110,230,215':'255,90,70';if(m.ty){cl=cd=THR[MTY[m.ty]].col}
     ctx.fillStyle=m.own?'#1f2b2a':'#2b2723';ctx.beginPath();ctx.arc(m.x,m.y,10,0,TAU);ctx.fill();
     ctx.strokeStyle='rgba('+cl+','+(.5+.5*bl)+')';ctx.lineWidth=2;ctx.stroke();
@@ -2195,6 +2301,13 @@ function drawMines(now,vx,vy,vw,vh){
     ctx.fillStyle='rgba(255,170,60,'+(.5*(1-k))+')';ctx.beginPath();ctx.arc(b.x,b.y,20+((b.r||120)-20)*k,0,TAU);ctx.fill();
     ctx.strokeStyle='rgba(255,220,150,'+(.8*(1-k))+')';ctx.lineWidth=3;ctx.stroke()});
   if(R.mw>0){ctx.strokeStyle='rgba(224,83,63,'+(R.mw/.2*.7)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(P.x,P.y,26+(1-R.mw/.2)*22,0,TAU);ctx.stroke()}
+}
+function detonateC4(){
+  var bi=-1,bd=1e9;
+  for(var i=0;i<scouts.length;i++){var d=scouts[i];if(!d.bomb)continue;var q=dist(mouse.wx,mouse.wy,d.x,d.y);if(q<bd){bd=q;bi=i}}
+  if(bi<0){toast('전개한 자폭 드론이 없습니다','#e8a33a');return}
+  var dr=scouts.splice(bi,1)[0];
+  explodeMine({x:dr.x,y:dr.y,pw:mkPw(dr.bomb),ty:0,dead:false,own:true},'r');
 }
 function mineCount(){var n=0;if(!P)return 0;for(var i=0;i<P.inv.length;i++)if(P.inv[i].k==='mine')n+=P.inv[i].n;return n}
 function minePws(){
@@ -2229,6 +2342,11 @@ function updPlant(dt){
   R.pl=true;
   if(R.mines.some(function(m){return !m.dead&&dist(P.x,P.y,m.x,m.y)<46})){toast('다른 지뢰와 너무 가깝습니다','#e0533f');return}
   var pw=takeMine();
+  if(mkTy(pw)===C4_TY){
+    scouts.push({x:P.x,y:P.y,bx:P.x,by:P.y,t:0,dur:90,spd:230,r:C4_VIS,ph:rnd(0,TAU),bomb:pw,nc:0});
+    toast('자폭 드론 전개 · 마우스를 따라다님 · B 로 기폭 · 남은 '+mineCount()+'개','#ff9a3c');sfxTick(900,.1,.08,'sine');
+    if(!$('inv').hidden)renderInv();return;
+  }
   R.mines.push({x:P.x,y:P.y,r:22,rev:true,own:true,dead:false,fuse:-1,arm:MINE_ARM_T,pw:mkPw(pw),ty:mkTy(pw),ph:rnd(0,6)});
   toast('지뢰 설치 ('+mineLabel(pw)+') · '+MINE_ARM_T+'초 뒤 작동 · 남은 '+mineCount()+'개 · E 로 회수','#4fd1c5');sfxTick(420,.08,.08,'square');
   if(!$('inv').hidden)renderInv();
@@ -2248,7 +2366,7 @@ function addContainer(x,y,tier){
     if(R.map.bank&&Math.random()<(tier===3?.6:tier===2?.45:.4))items.push(matItem('gold',tier===3?ri(2,4):ri(1,2)));
     if(R.map.id==='v'&&Math.random()<(tier===3?.65:tier===2?.45:.4))items.push(matItem('key',tier===3?ri(2,4):ri(1,2)));
     var sm0=STD_MAT[R.map.id];
-    if(sm0&&tier>=1&&tier<=3){var em0=R.map.id==='e';if(Math.random()<(em0?[.7,.85,.95]:[.4,.5,.7])[tier-1])items.push(matItem(sm0,(tier===3?ri(2,3):ri(1,2))+(em0?1:0)))}
+    if(sm0&&tier>=1&&tier<=3){var em0=R.map.id==='e'||R.map.id==='m';if(Math.random()<(em0?[.7,.85,.95]:[.4,.5,.7])[tier-1])items.push(matItem(sm0,(tier===3?ri(2,3):ri(1,2))+(em0?1:0)))}
   }
   if(R&&R.map&&R.map.hosp)hospLoot(items,tier);
   conts.push({x:x,y:y,w:32,h:22,tier:tier,name:pick(CONT_NAMES[tier]),items:items,opened:false,ph:Math.random()*6});
@@ -2706,7 +2824,7 @@ function drawPortDark(z,vx,vy,now){
   c.fillStyle='rgba(2,5,10,.86)';c.fillRect(0,0,labC.width,labC.height);
   c.setTransform(z,0,0,z,-vx*z,-vy*z);c.globalCompositeOperation='destination-out';
   function hole(x,y,r,a){g=c.createRadialGradient(x,y,r*.25,x,y,r);g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
-  hole(P.x,P.y,PORT_R*(P.scopeM||1),1);darkCone(c,PORT_R);
+  hole(P.x,P.y,PORT_R*(P.scopeM||1),1);darkCone(c,PORT_R);rvHoles(c);
   for(i=0;i<PT.lights.length;i++){
     var l=PT.lights[i];
     hole(l.x,l.y,l.on?90:55,.9);
@@ -2793,7 +2911,7 @@ function stampPrints(dt){
   if(R.pc<=0){R.pc=1;prints=prints.filter(function(p){return R.clock-p.t<=p.life});if(prints.length>700)prints=prints.slice(prints.length-700)}
 }
 /* ============ 투척류 (Q 투척 / Z 종류 선택) ============ */
-var thrown=[],thrZ=[],covW=[],drones=[],clusQ=[];
+var thrown=[],thrZ=[],covW=[],drones=[],clusQ=[],scouts=[],cdrones=[];
 function thrInv(){var g={};P.inv.forEach(function(x){if(x.k==='thr')g[x.id]=(g[x.id]||0)+x.n});return g}
 function thrIds(){var g=thrInv();return Object.keys(THR).filter(function(id){return g[id]>0})}
 function selThr(){var l=thrIds();if(!l.length)return null;if(l.indexOf(P.tSel)<0)P.tSel=l[0];return P.tSel}
@@ -2909,8 +3027,17 @@ function landThr(g){
   var t=THR[g.id],x=g.tx,y=g.ty,i;
   if(t.kind==='cover'){deployCover(x,y,g.ang||0,t);return}
   if(t.kind==='cluster'){clusBoom(x,y,0,t);return}
+  if(t.kind==='combat'){
+    cdrones.push({x:x,y:y,r:13,hp:t.hp,mhp:t.hp,t:0,dur:t.dur,spd:t.spd,ang:0,fireT:0,flash:0,hit:0,ph:rnd(0,TAU),noise:130,sneak:false,sprint:false,drone:true});
+    toast('전투 드론 전개 · 마우스를 따라다니며 스캐브를 자동 사격 · '+t.dur+'초','#ff9a3c');spark(x,y,'#ff9a3c',14);sfxTick(700,.12,.09,'sawtooth');
+    return;
+  }
+  if(t.kind==='scout'){
+    scouts.push({x:x,y:y,bx:x,by:y,t:0,dur:t.dur,spd:t.spd,r:t.vr,ph:rnd(0,TAU),bomb:0,nc:0});
+    toast('감시 드론 전개 · 마우스를 따라다님 · N 으로 소리 유인 · '+t.dur+'초','#7fe6ff');spark(x,y,'#7fe6ff',14);sfxTick(1100,.1,.08,'sine');
+    return;
+  }
   if(t.kind==='drone'){
-    if(drones.length>=2)drones.shift();
     drones.push({name:t.name,x:x,y:y,t:0,dur:t.dur,hps:t.hps,cure:!!t.cure,ph:rnd(0,TAU),fl:1,act:0});
     toast(t.name+' 전개 · '+t.dur+'초간 따라다니며 초당 '+t.hps+' 회복','#79e08a');spark(x,y,'#79e08a',14);sfxTick(900,.12,.08,'sine');
     return;
@@ -2933,7 +3060,7 @@ function updThrow(dt){
   var i,j;
   if(wallDirty){wallDirty=false;if(NAV)navBuild();buildMiniStatic()}
   if(thrCdT>0)thrCdT-=dt;
-  updDrones(dt);
+  updDrones(dt);updScouts(dt);updCombat(dt);
   if(P.flashT>0)P.flashT-=dt;
   if(P.frostT>0)P.frostT-=dt;
   for(i=thrown.length-1;i>=0;i--){var g=thrown[i];g.t+=dt;var k=clamp(g.t/g.dur,0,1);g.x=g.sx+(g.tx-g.sx)*k;g.y=g.sy+(g.ty-g.sy)*k;if(g.t>=g.dur){thrown.splice(i,1);landThr(g)}}
@@ -3567,7 +3694,7 @@ function updScav(s,dt){
   if(s.cage&&s.cage.locked){s.spd=0;s.aimT=0;s.exposed=false;s.state='patrol';if(s.hpShow>0)s.hpShow-=dt;return}
   s.noise=s.spd>110?300:s.spd>40?150:40;
   if(s.burn>0){s.burn-=dt;s.burnT=(s.burnT||0)+dt;if(s.burnT>=.5){s.burnT=0;s.hp-=BURN_TICK;s.hpShow=2;addFloater(s.x,s.y-18,'-'+BURN_TICK,'#ff8a3a');if(s.hp<=0){killScav(s);return}}}
-  var T=P;if(R.allies){var at=null,bd=1e9;for(var ai=0;ai<R.allies.length;ai++){var al=R.allies[ai];if(al.dead||al.down)continue;var ad=dist(s.x,s.y,al.x,al.y);if(ad<s.vis&&ad<bd&&los(s.x,s.y,al.x,al.y)&&angDiff(Math.atan2(al.y-s.y,al.x-s.x),s.ang)<s.fov/2+.4){at=al;bd=ad}}if(at&&(P.downed||!los(s.x,s.y,P.x,P.y)||bd<dist(s.x,s.y,P.x,P.y)*.85))T=at}T=prisonFoe(s,dt,T);var dx=T.x-s.x,dy=T.y-s.y,d=Math.hypot(dx,dy),wd=WEAP[s.w.id];
+  var T=P;if(R.allies){var at=null,bd=1e9;for(var ai=0;ai<R.allies.length;ai++){var al=R.allies[ai];if(al.dead||al.down)continue;var ad=dist(s.x,s.y,al.x,al.y);if(ad<s.vis&&ad<bd&&los(s.x,s.y,al.x,al.y)&&angDiff(Math.atan2(al.y-s.y,al.x-s.x),s.ang)<s.fov/2+.4){at=al;bd=ad}}if(at&&(P.downed||!los(s.x,s.y,P.x,P.y)||bd<dist(s.x,s.y,P.x,P.y)*.85))T=at}if(cdrones.length){var cb=null,cbd=1e9,dpl=dist(s.x,s.y,P.x,P.y),plSee=los(s.x,s.y,P.x,P.y);for(var ci=0;ci<cdrones.length;ci++){var cdr=cdrones[ci];if(cdr.hp<=0)continue;var cdd=dist(s.x,s.y,cdr.x,cdr.y);if(cdd<s.vis*.9&&cdd<cbd&&los(s.x,s.y,cdr.x,cdr.y)&&angDiff(Math.atan2(cdr.y-s.y,cdr.x-s.x),s.ang)<s.fov/2+.4){cb=cdr;cbd=cdd}}if(cb&&(!plSee||cbd<dpl*.85||T!==P))T=cb}T=prisonFoe(s,dt,T);var dx=T.x-s.x,dy=T.y-s.y,d=Math.hypot(dx,dy),wd=WEAP[s.w.id];
   if(s.fireT>0)s.fireT-=dt;if(s.hpShow>0)s.hpShow-=dt;if(s.flash>0)s.flash-=dt;
   if(s.sndT>0)s.sndT-=dt;
   s.stepT-=dt;if(s.spd>40&&s.stepT<=0){s.stepT=.4;scavSound(s,s.x,s.y,s.spd>110?420:s.spd>60?260:150,.5)}
@@ -3594,7 +3721,7 @@ function updScav(s,dt){
     if(s.melee){
       scavMove(s,tgt.x,tgt.y,s.msp||170,dt);
       if(s.meleeT>0)s.meleeT-=dt;
-      if(d<36&&s.meleeT<=0){s.meleeT=.8;var md2=s.mdmg||24;if(T===P)hurtPlayer(md2,2,toP+Math.PI,true);else if(T.faction)hitScavFromScav(T,md2,2,'body',null,s);else hitAlly(T,md2,2,'body',null)}
+      if(d<36&&s.meleeT<=0){s.meleeT=.8;var md2=s.mdmg||24;if(T===P)hurtPlayer(md2,2,toP+Math.PI,true);else if(T.drone)hitCombat(T,md2,s.x,s.y);else if(T.faction)hitScavFromScav(T,md2,2,'body',null,s);else hitAlly(T,md2,2,'body',null)}
     }else{
       var pref=PREF[s.w.id]||380;
       var mv=0,sp=125;
@@ -3656,7 +3783,7 @@ function killScav(s,by){
   if(R.map.snow&&Math.random()<.25)items.push(matItem('frost',ri(1,2)));
   if(R.map.prison){if(s.boss||s.warden)items.push(matItem('cuff',ri(6,10)));else if(Math.random()<.5)items.push(matItem('cuff',ri(1,2)))}
   if(R.map.port&&Math.random()<.2)items.push(matItem('seal',1));
-  var sm1=STD_MAT[R.map.id];if(sm1&&Math.random()<(R.map.id==='e'?.5:.2))items.push(matItem(sm1,ri(1,2)));
+  var sm1=STD_MAT[R.map.id];if(sm1&&Math.random()<(R.map.id==='e'||R.map.id==='m'?.5:.2))items.push(matItem(sm1,ri(1,2)));
   var spn=s.boss?'수감자 두목':s.warden?'소장':s.captain?'경비대장':null;
   conts.push({corpse:true,name:spn?spn+' 시체':'스캐브 시체',x:s.x,y:s.y,w:30,h:22,tier:0,items:items,ang:s.ang,sp:spn,spc:s.boss?'#ff6a3a':'#4fd1c5'});
   if(decals.length<90)decals.push({x:s.x,y:s.y,r:rnd(14,22)});
@@ -3896,7 +4023,7 @@ function startRaid(){
   P=newPlayer(spawns[R.spIdx]);
   if(mp.ally)initAlly();
   persist();
-  bullets=[];parts=[];floaters=[];ghosts=[];blasts=[];scavs=[];thrown=[];thrZ=[];covW=[];drones=[];clusQ=[];thrCdT=0;lootC=null;txtCache={};prints=[];VIS_R=VIS_BASE;
+  bullets=[];parts=[];floaters=[];ghosts=[];blasts=[];scavs=[];thrown=[];thrZ=[];covW=[];drones=[];scouts=[];cdrones=[];clusQ=[];thrCdT=0;lootC=null;txtCache={};prints=[];VIS_R=VIS_BASE;
   var n=0;
   var scn=mp.prison?0:Math.round(m.scavs*mp.sm);
   while(n<scn){
@@ -4180,13 +4307,14 @@ function updBullets(dt){
         var t2=rayCircle(sx,sy,ux,uy,s.x,s.y,s.r,tHit);if(t2<tHit){tHit=t2;target=s;hitRect=false}}
     }else{
       var t3=rayCircle(sx,sy,ux,uy,P.x,P.y,P.r,tHit);if(t3<tHit){tHit=t3;target=P;hitRect=false}
+      for(j=0;j<cdrones.length;j++){var cd2=cdrones[j];if(cd2.hp<=0)continue;var t6=rayCircle(sx,sy,ux,uy,cd2.x,cd2.y,cd2.r,tHit);if(t6<tHit){tHit=t6;target=cd2;hitRect=false}}
       if(R.allies)for(j=0;j<R.allies.length;j++){var al2=R.allies[j];if(al2.dead||al2.down)continue;var t4=rayCircle(sx,sy,ux,uy,al2.x,al2.y,al2.r,tHit);if(t4<tHit){tHit=t4;target=al2;hitRect=false}}
       if(b.fac)for(j=0;j<scavs.length;j++){var e5=scavs[j];if(e5.dead||e5.faction===b.fac||(e5.cage&&e5.cage.locked))continue;var t5=rayCircle(sx,sy,ux,uy,e5.x,e5.y,e5.r,tHit);if(t5<tHit){tHit=t5;target=e5;hitRect=false}}
     }
     if(target){
       var dmg=b.dmg*(1-b.fall*clamp((b.dist+tHit)/(b.rng||b.maxD),0,1)*.5);
-      var hx=sx+ux*tHit,hy=sy+uy*tHit,hz=hitZoneRay(target,sx,sy,ux,uy,tHit);
-      if(target===P)hurtPlayer(dmg,b.cls,Math.atan2(-b.vy,-b.vx),false,hx,hy,b.fx,hz);else if(target.ally)hitAlly(target,dmg,b.cls,hz,b.fx);else if(b.src==='s')hitScavFromScav(target,dmg,b.cls,hz,b.fx,b.owner);
+      var hx=sx+ux*tHit,hy=sy+uy*tHit,hz=target.drone?null:hitZoneRay(target,sx,sy,ux,uy,tHit);
+      if(target.drone)hitCombat(target,dmg,hx,hy);else if(target===P)hurtPlayer(dmg,b.cls,Math.atan2(-b.vy,-b.vx),false,hx,hy,b.fx,hz);else if(target.ally)hitAlly(target,dmg,b.cls,hz,b.fx);else if(b.src==='s')hitScavFromScav(target,dmg,b.cls,hz,b.fx,b.owner);
       else hitScav(target,dmg,b.cls,hz,b.src==='a'?'ally':'bullet',hx,hy,angDiff(Math.atan2(b.vy,b.vx),target.ang)<Math.PI/2,b.fx,b.suppressed);
       bullets.splice(i,1);continue;
     }
@@ -4208,6 +4336,21 @@ function computeVis(){
     poly.push(P.x+dx*(t+1),P.y+dy*(t+1));
   }
   R.visPoly=poly;
+  /* 원격 시야원: 설치한 감시 C4 + 정찰 드론 (벽에 막힘) */
+  var rv=[],mx=CW/SC/2+80,my=CH/SC/2+80;
+  function addRv(x,y,rad){
+    if(Math.abs(x-cam.x)>mx+rad||Math.abs(y-cam.y)>my+rad)return;
+    var cd=[],k,j,pl=[];
+    for(k=0;k<solids.length;k++){var q=solids[k];if(q.riv||q.x>x+rad||q.x+q.w<x-rad||q.y>y+rad||q.y+q.h<y-rad)continue;cd.push(q)}
+    for(k=0;k<72;k++){var a2=k/72*TAU,ux=Math.cos(a2),uy=Math.sin(a2),t2=rad;
+      for(j=0;j<cd.length;j++){var h2=rayRect(x,y,ux,uy,cd[j],t2);if(h2<t2)t2=h2}
+      pl.push(x+ux*(t2+1),y+uy*(t2+1))}
+    rv.push({x:x,y:y,r:rad,cand:cd,poly:pl});
+  }
+  for(i=0;i<R.mines.length;i++){var cm=R.mines[i];if(!cm.dead&&cm.own&&cm.ty===C4_TY)addRv(cm.x,cm.y,C4_VIS)}
+  for(i=0;i<scouts.length;i++)addRv(scouts[i].x,scouts[i].y,scouts[i].r);
+  for(i=0;i<cdrones.length;i++)addRv(cdrones[i].x,cdrones[i].y,CDRONE_VIS);
+  R.rv=rv;
 }
 /* 저격류(단발·사거리 1200+)를 들면 시야 반경이 늘고, 어두운 맵(연구소·항구 야간)에서는 조준 방향 원뿔로 더 멀리 보인다 */
 function darkReach(base,x,y){
@@ -4219,7 +4362,9 @@ function darkCone(c,base){
   var sm=P.scopeM||1,k=clamp((sm-1)/.9,0,1),reach=base*sm*(1.45+.9*k),half=.26+.08*k;
   c.fillStyle='rgba(0,0,0,1)';c.beginPath();c.moveTo(P.x,P.y);c.arc(P.x,P.y,reach,P.ang-half,P.ang+half);c.closePath();c.fill();
 }
-function canSee(x,y){var d=dist(x,y,P.x,P.y);if(d>VIS_R)return false;if(R.map.lab&&d>darkReach(LAB_R,x,y)&&!labLit(x,y))return false;if(R.map.port&&d>darkReach(PORT_R,x,y)&&!portLit(x,y))return false;return los(P.x,P.y,x,y,R.cand)}
+function canSee(x,y){
+  if(R.rv)for(var q=0;q<R.rv.length;q++){var rs=R.rv[q];if(Math.abs(rs.x-x)<=rs.r&&Math.abs(rs.y-y)<=rs.r&&dist(x,y,rs.x,rs.y)<=rs.r&&los(rs.x,rs.y,x,y,rs.cand))return true}
+var d=dist(x,y,P.x,P.y);if(d>VIS_R)return false;if(R.map.lab&&d>darkReach(LAB_R,x,y)&&!labLit(x,y))return false;if(R.map.port&&d>darkReach(PORT_R,x,y)&&!portLit(x,y))return false;return los(P.x,P.y,x,y,R.cand)}
 function drawHuman(x,y,ang,body,head,wlen,flash,isP){
   ctx.save();ctx.translate(x,y);ctx.rotate(ang);
   ctx.strokeStyle='#0c0e0b';ctx.lineWidth=4;ctx.lineCap='round';
@@ -4348,15 +4493,18 @@ function render(){
   /* particles */
   for(i=0;i<parts.length;i++){var pp=parts[i];ctx.fillStyle=pp.col;ctx.globalAlpha=clamp(1-pp.t/pp.life,0,1);ctx.fillRect(pp.x-1.5,pp.y-1.5,3,3)}
   ctx.globalAlpha=1;
-  drawThrow(now,vx,vy,vw,vh);drawClus(now);drawThrowAim();drawCmdAim();drawDrones(now);
+  drawThrow(now,vx,vy,vw,vh);drawClus(now);drawThrowAim();drawCmdAim();drawDrones(now);drawScouts(now);drawCombat(now);
   /* fog of war */
+  if(R.rv&&R.rv.length){drawFogMulti(z,vx,vy)}else{
   var poly=R.visPoly;
   ctx.beginPath();ctx.rect(vx-60,vy-60,vw+120,vh+120);
   ctx.moveTo(poly[0],poly[1]);for(i=2;i<poly.length;i+=2)ctx.lineTo(poly[i],poly[i+1]);ctx.closePath();
   ctx.fillStyle='rgba(3,5,4,.74)';ctx.fill('evenodd');
   ctx.save();ctx.beginPath();ctx.moveTo(poly[0],poly[1]);for(i=2;i<poly.length;i+=2)ctx.lineTo(poly[i],poly[i+1]);ctx.closePath();ctx.clip();
   ctx.restore();
+  }
   if(R.map.lab)drawLabDark(z,vx,vy,now);if(R.map.port)drawPortDark(z,vx,vy,now);
+  drawRanges(vx,vy,vw,vh);
   /* 소리 잔상: 보이지 않는 곳에서 난 스캐브 소리는 노란 잔상으로 남는다 */
   for(i=0;i<ghosts.length;i++){var gh=ghosts[i];
     if(canSee(gh.x,gh.y))continue;
@@ -4626,11 +4774,11 @@ function packItem(uid){
     LD.med[it.id]=Math.min(mx,stashMedCount(it.id),LD.med[it.id]+1);
   }else if(it.k==='mine'){
     var pwm=mkey(it),curm=LD.mp[pwm]||0;
-    if(ldMineTotal()>=MINE_LD_MAX||curm>=stashMineBy(pwm))hubMsg('가져갈 수 있는 최대 수량입니다 (지뢰 합계 최대 '+MINE_LD_MAX+'개)');
+    if(ldMineTotal()>=MINE_LD_MAX||curm>=stashMineBy(pwm))hubMsg('보유한 지뢰를 모두 담았습니다');
     else LD.mp[pwm]=curm+1;
   }else if(it.k==='thr'){
     var curt=LD.tp[it.id]||0;
-    if(curt>=Math.min(THR_LD_MAX,stashThrCount(it.id)))hubMsg('가져갈 수 있는 최대 수량입니다 (종류당 최대 '+THR_LD_MAX+'개)');
+    if(curt>=Math.min(THR_LD_MAX,stashThrCount(it.id)))hubMsg('보유한 수량을 모두 담았습니다');
     else LD.tp[it.id]=curt+1;
   }else if(it.k==='pick'){if((LD.pick|0)>=stashPickCount())hubMsg('보유한 락픽을 모두 담았습니다');else LD.pick=(LD.pick|0)+1}
 }
@@ -4722,22 +4870,22 @@ function renderStash(){
   var thrIds=Object.keys(THR).filter(function(id){return stashThrCount(id)>0||(LD.tp[id]||0)>0}),thrH='',thrS=0;
   thrIds.forEach(function(id){
     var have=stashThrCount(id),cur=LD.tp[id]||0,mx=Math.min(have,THR_LD_MAX),inn='';
-    for(var qt=0;qt<=mx;qt++)inn+=chipHtml('thr',id,qt,qt,cur===qt);
+    for(var qt=0;qt<=Math.min(mx,10);qt++)inn+=chipHtml('thr',id,qt,qt,cur===qt);if(mx>10)inn+=chipHtml('thr',id,mx,'전부 '+mx,cur===mx);
     inn+='<input class="numin" type="number" inputmode="numeric" min="0" max="'+mx+'" step="1" value="'+cur+'" data-num="thr" data-k="'+id+'" title="직접 입력" aria-label="'+THR[id].name+' 수량 직접 입력">';
     thrH+=ldRow(THR[id].name,THR[id].desc,have,cur,inn,'#e8583f');
     if(cur>0){thrS+=cur;pills+='<span class="pill" style="--gc:#e8583f">'+THR[id].name+' ×'+cur+'</span>'}
   });
-  if(thrH)medH+=ldGrp('투척류','종류당 최대 '+THR_LD_MAX+'개 · 출격 후 Q 투척 / Z 선택','#e8583f',thrS,thrH);
+  if(thrH)medH+=ldGrp('투척류','보유 수량만큼 · 출격 후 Q 투척 / Z 선택','#e8583f',thrS,thrH);
   var smn=stashMineCount(),mpws=stashMinePws(),mineH='';
   if(smn>0||ldMineTotal()>0){
     mpws.forEach(function(pw){
       var have=stashMineBy(pw),cur=LD.mp[pw]||0,mx=Math.min(have,MINE_LD_MAX),inn='';
-      for(var qm=0;qm<=mx;qm++)inn+=chipHtml('mine',pw,qm,qm,cur===qm);
+      for(var qm=0;qm<=Math.min(mx,10);qm++)inn+=chipHtml('mine',pw,qm,qm,cur===qm);if(mx>10)inn+=chipHtml('mine',pw,mx,'전부 '+mx,cur===mx);
       inn+='<input class="numin" type="number" inputmode="numeric" min="0" max="'+mx+'" step="1" value="'+cur+'" data-num="mine" data-k="'+pw+'" title="직접 입력" aria-label="'+mineLabel(pw)+' 수량 직접 입력"><span style="align-self:center;color:var(--mute);font-size:12px">개 직접 입력</span>';
       mineH+=ldRow(mineLabel(pw),'반경 '+mineBlast(pw)+' · 피해 '+mineDmg(pw),have,cur,inn,'#e8a33a');
       if(cur>0)pills+='<span class="pill" style="--gc:#e8a33a">'+mineLabel(pw)+' ×'+cur+'</span>';
     });
-    medH+=ldGrp('대인지뢰','합계 '+ldMineTotal()+' / 최대 '+MINE_LD_MAX+'개 · 출격 후 X 위력 선택 / G 설치','#e8a33a',ldMineTotal(),mineH);
+    medH+=ldGrp('대인지뢰','합계 '+ldMineTotal()+'개 · 출격 후 X 위력 선택 / G 설치','#e8a33a',ldMineTotal(),mineH);
   }
   h+='<div class="sub" style="margin:12px 0 4px">지참 요약</div><div class="sumbar">'+(pills||'<span class="none">선택한 소모품 없음</span>')+'</div>'+medH;
   if(hidN)h+='<div class="hint" style="margin-top:8px">보관함에 없는 소모품 '+hidN+'종은 숨겼습니다</div>';
@@ -4813,6 +4961,20 @@ function doCraft(cnt){
   }
   persist();hubMsg('위력 '+pw+' 대인지뢰 ×'+cnt+' 제작 (부품 −'+need+')','#79b665');
 }
+function doCraftMax(){
+  var pw=HUB.cpw||MINE_PW_BASE,parts=stashPartCount(),cnt=Math.floor(parts/pw),rem=parts-cnt*pw;
+  function giveBack(n){var b=partItem(n);if(!stashAdd(b)){b.uid=nid();SAVE.stash.push(b)}}
+  if(cnt<1){hubMsg('부품이 부족합니다 (필요 '+pw+' · 보유 '+parts+')','#e0533f');return}
+  stashTakePart(cnt*pw);
+  if(!stashAdd(mineItem(cnt,pw))){giveBack(cnt*pw);hubMsg('보관함이 가득 찼습니다. 물품을 판매하세요','#e0533f');return}
+  var msg='위력 '+pw+' 대인지뢰 ×'+cnt+' 제작';
+  if(rem>0){
+    stashTakePart(rem);
+    if(stashAdd(mineItem(1,rem)))msg+=' + 남은 부품으로 위력 '+rem+' ×1';
+    else{giveBack(rem);msg+=' (남은 부품 '+rem+'개는 보관함이 가득 차 유지)'}
+  }
+  persist();hubMsg(msg+' (부품 전부 사용)','#79b665');
+}
 function doCraftSpecial(ty,q){
   var id=MTY[ty],pw=HUB.cpw||MINE_PW_BASE;if(!id||!(q>0))return;
   var hb=stashMineBy(pw),ht=stashThrCount(id);
@@ -4843,11 +5005,12 @@ function doUnmake(uid,mode){
   persist();hubMsg('위력 '+pw+' 지뢰 ×'+cnt+' 분해 → 부품 +'+parts,'#79b665');
 }
 function craftMedHtml(){
-  var ph=stashMatCount(PICK_RECIPE.mat),h='<div class="sub" style="margin:14px 0 6px">락픽 제작 · 잠긴 보안문에 설치하면 10초 뒤 개방</div><div class="rows"><div class="sr" style="--rc:'+RC[PICK_RECIPE.rar]+'"><span class="t">락픽</span><span class="n">락픽<small>설치 후 10초 · 잠긴 보안문 개방</small><small>'+MATS[PICK_RECIPE.mat].name+' ×'+PICK_RECIPE.n+' (보유 '+ph+' · '+MATS[PICK_RECIPE.mat].src+' 전용)</small></span><span class="btns"><button type="button" class="btn sm primary" data-act="craftPick"'+(ph<PICK_RECIPE.n?' disabled':'')+'>제작</button></span></div></div><div class="sub" style="margin:14px 0 6px">소모품 제작 · 맵 고유 재료로 만드는 범용 소모품 (어느 맵에서나 사용)</div><div class="rows">';
+  var ph=stashMatCount(PICK_RECIPE.mat),h='<div class="sub" style="margin:14px 0 6px">락픽 제작 · 잠긴 보안문에 설치하면 10초 뒤 개방</div><div class="rows"><div class="sr" style="--rc:'+RC[PICK_RECIPE.rar]+'"><span class="t">락픽</span><span class="n">락픽<small>설치 후 10초 · 잠긴 보안문 개방</small><small>'+MATS[PICK_RECIPE.mat].name+' ×'+PICK_RECIPE.n+' (보유 '+ph+' · '+MATS[PICK_RECIPE.mat].src+' 전용)</small></span><span class="btns"><button type="button" class="btn sm primary" data-act="craftPick" data-v="1"'+(ph<PICK_RECIPE.n?' disabled':'')+'>제작</button><button type="button" class="btn sm primary" data-act="craftPick" data-v="'+Math.floor(ph/PICK_RECIPE.n)+'"'+(ph<PICK_RECIPE.n?' disabled':'')+'>최대 ×'+Math.floor(ph/PICK_RECIPE.n)+'</button></span></div></div><div class="sub" style="margin:14px 0 6px">소모품 제작 · 맵 고유 재료로 만드는 범용 소모품 (어느 맵에서나 사용)</div><div class="rows">';
   CRAFTS.slice().sort(function(a,b){return (stashMatCount(b.mat)>=b.n?1:0)-(stashMatCount(a.mat)>=a.n?1:0)}).forEach(function(c){
     var md=MEDS[c.id],mt=MATS[c.mat],have=stashMatCount(c.mat);
     h+='<div class="sr" style="--rc:'+RC[md.rar]+'"><span class="t">의료</span><span class="n">'+md.name+'<small>'+medDesc(md)+'</small><small>'+mt.name+' ×'+c.n+' (보유 '+have+' · '+mt.src+' 전용)</small></span><span class="btns">';
     [1,5].forEach(function(q){h+='<button type="button" class="btn sm primary" data-act="craftM" data-k="'+c.id+'" data-v="'+q+'"'+(have<c.n*q?' disabled':'')+'>×'+q+'</button>'});
+    var mxm=Math.floor(have/c.n);h+='<button type="button" class="btn sm primary" data-act="craftM" data-k="'+c.id+'" data-v="'+mxm+'"'+(mxm<1?' disabled':'')+'>최대 ×'+mxm+'</button>';
     h+='</span></div>';
   });
   h+='</div><div class="sub" style="margin:14px 0 6px">투척류 제작 · Q 로 던져 쓰는 범용 투척 장비</div><div class="rows">';
@@ -4855,6 +5018,7 @@ function craftMedHtml(){
     var t=THR[id],mt=MATS[t.mat],have=stashMatCount(t.mat);
     h+='<div class="sr" style="--rc:'+RC[t.rar]+'"><span class="t">투척</span><span class="n">'+t.name+'<small>'+t.desc+'</small><small>'+mt.name+' ×'+t.n+' (보유 '+have+' · '+mt.src+' 전용)</small></span><span class="btns">';
     [1,3].forEach(function(q){h+='<button type="button" class="btn sm primary" data-act="craftT" data-k="'+id+'" data-v="'+q+'"'+(have<t.n*q?' disabled':'')+'>×'+q+'</button>'});
+    var mxt=Math.floor(have/t.n);h+='<button type="button" class="btn sm primary" data-act="craftT" data-k="'+id+'" data-v="'+mxt+'"'+(mxt<1?' disabled':'')+'>최대 ×'+mxt+'</button>';
     h+='</span></div>';
   });
   return h+'</div><div class="hint">재료는 해당 맵에서만 나옵니다 (화학 공단: 촉매 앰풀 · 방사능 폐광: 우라늄 광석 · 설원 기지: 서리 결정 · 교도소 폭동: 락픽 부품 · 병원: 의료 약품 앰풀·드론 모듈 · 항구 야간: 컨테이너 봉인 · 백병전 구역: 단련 칼날 · 구조 작전지: 구조대 보급품 · 지하 연구소: 연구 샘플 · 은행 강도: 금괴 조각 · 군 보안 시설: 암호 키 조각 · 외곽 부지: 신호 화약 · 국경 검문소: 검문 인장 · 폐허 도심: 철근 다발 · 폐공단: 정제 강철 · 사막 기지: 사막 약초 · 황무지: 황무지 유물 파편). 귀환해야 보관함에 반입되며, 만든 소모품은 분해해 재료로 되돌릴 수 있습니다.</div>';
@@ -4870,10 +5034,15 @@ function doCraftMed(id,q){
   }
   persist();hubMsg(MEDS[id].name+' ×'+q+' 제작 ('+MATS[c.mat].name+' −'+need+')','#79b665');
 }
-function doCraftPick(){
-  if(stashMatCount(PICK_RECIPE.mat)<PICK_RECIPE.n){hubMsg('락픽 부품이 부족합니다','#e0533f');return}
-  if(SAVE.stash.length>=stashCap()){hubMsg('보관함이 가득 찼습니다. 물품을 판매하세요','#e0533f');return}
-  stashTakeMat(PICK_RECIPE.mat,PICK_RECIPE.n);stashAdd({k:'pick',n:1,r:PICK_RECIPE.rar,v:PICK_RECIPE.val});persist();hubMsg('락픽 제작 완료 · 출격 준비에서 원하는 만큼 담을 수 있습니다','#79b665');
+function doCraftPick(q){
+  q=Math.max(1,Math.floor(q)||1);var need=PICK_RECIPE.n*q;
+  if(stashMatCount(PICK_RECIPE.mat)<need){hubMsg('락픽 부품이 부족합니다','#e0533f');return}
+  stashTakeMat(PICK_RECIPE.mat,need);
+  if(!stashAdd({k:'pick',n:q,r:PICK_RECIPE.rar,v:PICK_RECIPE.val})){
+    var back=matItem(PICK_RECIPE.mat,need);if(!stashAdd(back)){back.uid=nid();SAVE.stash.push(back)}
+    hubMsg('보관함이 가득 찼습니다. 물품을 판매하세요','#e0533f');return;
+  }
+  persist();hubMsg('락픽 ×'+q+' 제작 완료 · 출격 준비에서 원하는 만큼 담을 수 있습니다','#79b665');
 }
 function doCraftThr(id,q){
   var t=THR[id];if(!t||!(q>0))return;
@@ -4916,12 +5085,15 @@ function renderCraft(){
   h+='</div><div class="sum"><span>소요 부품</span><b>'+pw+'개</b><span>보유 부품</span><b>'+parts+'개</b><span>폭발 반경</span><b>'+mineBlast(pw)+' ('+Math.round(mineBlast(pw)/12)+'m)</b><span>스캐브 중심 피해</span><b>'+mineDmg(pw)+'</b><span>플레이어 중심 피해(오폭)</span><b>'+mineSelf(pw)+'</b><span>가치</span><b>₩'+fmt(mineVal(pw))+'</b></div>';
   h+='<div class="btns">';
   [1,5,10].forEach(function(c){h+='<button type="button" class="btn primary" data-act="craft" data-k="'+c+'"'+(parts<pw*c?' disabled':'')+'>제작 ×'+c+' (부품 '+pw*c+')</button>'});
+  var mxc=Math.floor(parts/pw),mxr=parts-mxc*pw;
+  h+='<button type="button" class="btn primary" data-act="craftMax"'+(mxc<1?' disabled':'')+'>최대 제작 · 부품 전부 사용 (위력 '+pw+' ×'+mxc+(mxr>0?' + 위력 '+mxr+' ×1':'')+')</button>';
   h+='</div><div class="sub" style="margin:14px 0 6px">특수 지뢰 조합 · 위력 '+pw+' 대인지뢰 1 + 투척류 1 → 특수 지뢰 1 (폭발 피해 '+Math.round(MTY_DMG*100)+'%, 대신 투척 효과가 함께 발동 · 위력은 위 선택값)</div><div class="rows">';
   var craftTypes=[];for(var ty=1;ty<MTY.length;ty++)craftTypes.push(ty);
   craftTypes.sort(function(a,b){var ca=stashMineBy(pw)>=1&&stashThrCount(MTY[a])>=1,cb=stashMineBy(pw)>=1&&stashThrCount(MTY[b])>=1;return (cb?1:0)-(ca?1:0)}).forEach(function(ty){
     var tid=MTY[ty],tt=THR[tid],hb=stashMineBy(pw),ht=stashThrCount(tid),sk=pw+100*ty;
-    h+='<div class="sr" style="--rc:'+RC[mineItem(1,sk).r]+'"><span class="t">지뢰</span><span class="n">'+mineLabel(sk)+'<small>폭발 후 '+tt.desc+'</small><small>위력 '+pw+' 대인지뢰 ×1 (보유 '+hb+') + '+tt.name+' ×1 (보유 '+ht+')</small></span><span class="btns">';
+    h+='<div class="sr" style="--rc:'+RC[mineItem(1,sk).r]+'"><span class="t">'+(ty===C4_TY?'드론':'지뢰')+'</span><span class="n">'+mineLabel(sk)+'<small>'+(ty===C4_TY?'G 로 전개하면 마우스를 따라다니는 자폭 드론 · B 로 기폭 · 폭발 피해 100%':'폭발 후 '+tt.desc)+'</small><small>위력 '+pw+' 대인지뢰 ×1 (보유 '+hb+') + '+tt.name+' ×1 (보유 '+ht+')</small></span><span class="btns">';
     [1,3].forEach(function(q){h+='<button type="button" class="btn sm primary" data-act="craftS" data-k="'+ty+'" data-v="'+q+'"'+(hb<q||ht<q?' disabled':'')+'>×'+q+'</button>'});
+    var mxs=Math.min(hb,ht);h+='<button type="button" class="btn sm primary" data-act="craftS" data-k="'+ty+'" data-v="'+mxs+'"'+(mxs<1?' disabled':'')+'>최대 ×'+mxs+'</button>';
     h+='</span></div>';
   });
   h+='</div>'+craftMedHtml()+'</div><div class="pane"><h4>보유 재료·제작품<small>보관함 '+SAVE.stash.length+' / '+stashCap()+'</small></h4><div class="rows">';
@@ -4945,6 +5117,76 @@ function renderHub(sig){
   if(sig){var els=$('hub').querySelectorAll('[data-act]');for(var i=0;i<els.length;i++){var el=els[i];if(el.dataset.act+'|'+(el.dataset.k||'')+'|'+(el.dataset.v||'')===sig){try{el.focus({preventScroll:true})}catch(e){}break}}}
 }
 
+/* ============ 설정 화면 ============ */
+function setRow(g,k,name,desc){var on=SET[g][k];return '<div class="setrow"><span class="sn">'+name+(desc?'<small>'+desc+'</small>':'')+'</span><button type="button" class="btn sm'+(on?' primary':'')+'" data-sg="'+g+'" data-sk="'+k+'">'+(on?'켜짐':'꺼짐')+'</button></div>'}
+function volRow(k,vk,name,desc){var on=SET.snd[k];return '<div class="setrow"><span class="sn">'+name+(desc?'<small>'+desc+'</small>':'')+'</span><input type="range" min="0" max="100" step="5" value="'+SET.snd[vk]+'" data-sv="'+vk+'" aria-label="'+name+' 음량"><span class="sv" id="sv_'+vk+'">'+SET.snd[vk]+'%</span><button type="button" class="btn sm'+(on?' primary':'')+'" data-sg="snd" data-sk="'+k+'">'+(on?'켜짐':'꺼짐')+'</button></div>'}
+function renderSettings(){
+  var h='<h2>설정</h2><p class="why">변경 즉시 저장됩니다 · Esc 로 닫습니다.</p>';
+  h+='<div class="setsec">소리</div>';
+  h+=setRow('snd','all','전체 소리','끄면 아래 항목과 관계없이 모두 꺼집니다 · 게임 중 M 키로도 전환');
+  h+=volRow('gun','gv','총소리','내 총 · 적 · 아군 총 발사음');
+  h+=volRow('fx','fv','효과음','폭발 · 투척 · 상호작용 · 피격 등 총소리를 뺀 나머지 소리');
+  h+='<div class="setsec">사거리 표시 (게임 화면에 겹쳐 그립니다 · 1m = 12px)</div>';
+  h+=setRow('rng','me','내 총 유효사거리','들고 있는 총의 사거리를 초록 점선 원과 조준선 거리(m)로 표시');
+  h+=setRow('rng','foe','적 총 유효사거리','보이는 적이 든 총의 사거리를 붉은 점선 원으로 표시');
+  h+=setRow('rng','knife','내 근접 공격 범위','칼 공격이 닿는 부채꼴(반경 64)을 표시');
+  h+=setRow('rng','foeM','적 근접 공격 범위','근접 전용·탄이 떨어진 적의 타격 반경(36)을 표시');
+  h+=setRow('rng','noise','내 소음 반경','지금 내 행동(걷기·달리기·살금걸음)이 적에게 들리는 거리를 표시');
+  h+='<div class="btns" style="margin-top:14px"><button class="btn primary" id="setClose" type="button">닫기</button></div>';
+  $('setBox').innerHTML=h;
+}
+function openSettings(){renderSettings();$('settings').hidden=false}
+function closeSettings(){$('settings').hidden=true}
+$('settings').addEventListener('click',function(e){
+  var t=e.target.closest('button');if(!t)return;
+  if(t.id==='setClose'){closeSettings();return}
+  if(t.dataset.sg){var g=t.dataset.sg,k=t.dataset.sk;SET[g][k]=SET[g][k]?0:1;saveSet();renderSettings()}
+});
+$('settings').addEventListener('input',function(e){
+  var t=e.target;if(!t.dataset||!t.dataset.sv)return;
+  SET.snd[t.dataset.sv]=+t.value;var l=$('sv_'+t.dataset.sv);if(l)l.textContent=t.value+'%';saveSet();
+});
+$('settings').addEventListener('change',function(e){
+  var t=e.target;if(!t.dataset||!t.dataset.sv)return;
+  if(t.dataset.sv==='gv')sfxShot(1500,.14,.12);else sfxTick(620,.12,.1,'square');
+});
+$('setBtn').addEventListener('click',openSettings);
+$('pSet').addEventListener('click',openSettings);
+
+/* ============ 사거리 오버레이 (설정에서 켜고 끔) ============ */
+function rngLabel(x,y,t,col){ctx.save();ctx.setLineDash([]);ctx.font='700 11px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.65)';ctx.strokeText(t,x,y);ctx.fillStyle=col;ctx.fillText(t,x,y);ctx.restore()}
+var fogC=null,fogCtx=null;
+function drawFogMulti(z,vx,vy){
+  if(!fogC){fogC=document.createElement('canvas');fogCtx=fogC.getContext('2d')}
+  if(fogC.width!==cv.width||fogC.height!==cv.height){fogC.width=cv.width;fogC.height=cv.height}
+  var c=fogCtx,k,polys=[R.visPoly];R.rv.forEach(function(r){polys.push(r.poly)});
+  c.setTransform(1,0,0,1,0,0);c.globalCompositeOperation='source-over';c.clearRect(0,0,fogC.width,fogC.height);
+  c.fillStyle='rgba(3,5,4,.74)';c.fillRect(0,0,fogC.width,fogC.height);
+  c.setTransform(z,0,0,z,-vx*z,-vy*z);c.globalCompositeOperation='destination-out';c.fillStyle='#000';
+  polys.forEach(function(p){c.beginPath();c.moveTo(p[0],p[1]);for(k=2;k<p.length;k+=2)c.lineTo(p[k],p[k+1]);c.closePath();c.fill()});
+  c.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(fogC,0,0);ctx.restore();
+}
+function rvHoles(c){if(!R.rv)return;R.rv.forEach(function(r){var g=c.createRadialGradient(r.x,r.y,r.r*.3,r.x,r.y,r.r);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(r.x,r.y,r.r,0,TAU);c.fill()})}
+function drawRanges(vx,vy,vw,vh){
+  var G=SET.rng;if(!P||!(G.me||G.foe||G.knife||G.foeM||G.noise))return;
+  var i,s,r;
+  ctx.save();ctx.lineWidth=2;
+  if(G.noise&&P.noise>0){ctx.setLineDash([4,8]);ctx.strokeStyle='rgba(232,163,58,.55)';ctx.beginPath();ctx.arc(P.x,P.y,P.noise,0,TAU);ctx.stroke();rngLabel(P.x,P.y-P.noise-6,'소음 '+Math.round(P.noise/12)+'m','rgba(240,190,100,.95)')}
+  if(G.me&&P.cur<3){var w=curW();if(w&&WEAP[w.id]){var d=WEAP[w.id];r=d.range;
+    ctx.setLineDash([16,10]);ctx.strokeStyle='rgba(121,182,101,.6)';ctx.beginPath();ctx.arc(P.x,P.y,r,0,TAU);ctx.stroke();
+    var lim=Math.min(r,Math.hypot(vw,vh)*.42),ca=Math.cos(P.ang),sa=Math.sin(P.ang);
+    ctx.setLineDash([2,8]);ctx.strokeStyle='rgba(121,182,101,.4)';ctx.beginPath();ctx.moveTo(P.x+ca*30,P.y+sa*30);ctx.lineTo(P.x+ca*lim,P.y+sa*lim);ctx.stroke();
+    rngLabel(P.x+ca*lim,P.y+sa*lim-8,d.short+' 유효 '+Math.round(r/12)+'m'+(lim<r?' →':''),'rgba(165,235,145,.95)')}}
+  if(G.knife){ctx.setLineDash([]);ctx.fillStyle='rgba(235,240,245,.10)';ctx.strokeStyle='rgba(235,240,245,.65)';ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.arc(P.x,P.y,64,P.ang-.95,P.ang+.95);ctx.closePath();ctx.fill();ctx.stroke();rngLabel(P.x+Math.cos(P.ang)*76,P.y+Math.sin(P.ang)*76,'칼 '+Math.round(64/12)+'m','rgba(235,240,245,.95)')}
+  if(G.foe||G.foeM){
+    for(i=0;i<scavs.length;i++){s=scavs[i];if(s.dead||!canSee(s.x,s.y))continue;
+      if(s.melee){if(!G.foeM)continue;ctx.setLineDash([]);ctx.fillStyle='rgba(255,110,80,.13)';ctx.strokeStyle='rgba(255,120,90,.8)';ctx.beginPath();ctx.arc(s.x,s.y,36,0,TAU);ctx.fill();ctx.stroke()}
+      else if(G.foe&&s.w&&WEAP[s.w.id]){r=WEAP[s.w.id].range;ctx.setLineDash([12,10]);ctx.strokeStyle='rgba(224,83,63,.4)';ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.stroke();
+        rngLabel(s.x,s.y-r-6<vy-40?s.y+18:s.y-r-6,WEAP[s.w.id].short+' '+Math.round(r/12)+'m','rgba(255,140,120,.9)')}}
+  }
+  ctx.restore();
+}
 /* ============ INPUT ============ */
 function onKey(code){
   if(paused){if(code==='Escape')setPause(false);return}
@@ -4961,6 +5203,8 @@ function onKey(code){
     case 'KeyC':sneakOn=!sneakOn;toast(sneakOn?'살금걸음 켜짐 (C 로 해제)':'살금걸음 해제','#79b665');break;
     case 'KeyR':startReload();break;
     case 'KeyX':cycleMine();break;
+    case 'KeyB':detonateC4();break;
+    case 'KeyN':scoutNoise();break;
     case 'KeyQ':beginThrow();break;
     case 'KeyZ':cycleThr();break;
     case 'Digit1':selectSlot(0);break;
@@ -4971,17 +5215,18 @@ function onKey(code){
     case 'KeyH':quickHeal();break;
     case 'KeyF':autoLoot();break;
     case 'KeyT':cycleAmmo();break;
-    case 'KeyM':muted=!muted;toast(muted?'소리 끔':'소리 켬');break;
+    case 'KeyM':SET.snd.all=SET.snd.all?0:1;saveSet();toast(SET.snd.all?'소리 켬':'소리 끔');break;
   }
 }
 function syncZoomUI(){var p=Math.round(ZM*100);$('zRange').value=p;$('zVal').textContent=p+'%'}
-function setZoom(v){ZM=clamp(Math.round(v*20)/20,.6,1.8);SC=BASE*ZM;SAVE.zoom=ZM;persist();syncZoomUI()}
+function setZoom(v){ZM=clamp(Math.round(v*20)/20,.25,1.8);SC=BASE*ZM;SAVE.zoom=ZM;persist();syncZoomUI()}
 function setPause(v){paused=v;$('pause').hidden=!v;if(v)syncZoomUI();else{SAVE.zoom=ZM;persist();$('stage').focus()}}
 $('zOut').addEventListener('click',function(){setZoom(ZM-.05)});
 $('zIn').addEventListener('click',function(){setZoom(ZM+.05)});
 $('zReset').addEventListener('click',function(){setZoom(1)});
 $('zRange').addEventListener('input',function(){setZoom(+this.value/100)});
 window.addEventListener('keydown',function(e){
+  if(!$('settings').hidden){if(e.code==='Escape'){e.preventDefault();closeSettings()}return}
   if(state!=='raid'){return}
   if(['Tab','Space','ArrowUp','ArrowDown'].indexOf(e.code)>=0)e.preventDefault();
   if(e.repeat){return}
@@ -4999,7 +5244,7 @@ window.addEventListener('mouseup',function(e){if(e.button===0&&!TI.on)mouse.down
 cv.addEventListener('contextmenu',function(e){e.preventDefault()});
 cv.addEventListener('auxclick',function(e){if(e.button===1)e.preventDefault()});
 window.addEventListener('mousemove',function(e){if(TI.on)return;var r=cv.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top});
-cv.addEventListener('wheel',function(e){if(state==='raid'&&!paused){e.preventDefault();ZM=clamp(ZM*(e.deltaY>0?.9:1.1),.6,1.8);SC=BASE*ZM;toast('시야 배율 '+Math.round(ZM*100)+'%')}},{passive:false});
+cv.addEventListener('wheel',function(e){if(state==='raid'&&!paused){e.preventDefault();ZM=clamp(ZM*(e.deltaY>0?.9:1.1),.25,1.8);SC=BASE*ZM;toast('시야 배율 '+Math.round(ZM*100)+'%')}},{passive:false});
 
 $('inv').addEventListener('click',function(e){if(e.target.closest('[data-x]')){closeLoot();$('inv').hidden=true;return}
   var pmc=e.target.closest('[data-pm]');if(pmc){startHeal(pmc.dataset.pm);renderInv();return}
@@ -5048,7 +5293,8 @@ $('hub').addEventListener('click',function(e){
   else if(a==='ammoGrade'){HUB.ammoGrade=clamp(+v,1,6)}
   else if(a==='cpw'){HUB.cpw=+v}
   else if(a==='craft'){doCraft(+k)}
-  else if(a==='craftPick'){doCraftPick()}
+  else if(a==='craftMax'){doCraftMax()}
+  else if(a==='craftPick'){doCraftPick(+v||1)}
   else if(a==='craftS'){doCraftSpecial(+k,+v)}
   else if(a==='unmake'){doUnmake(+k,v)}
   else if(a==='unmakeM'){doUnmakeMed(+k,v)}
@@ -5096,6 +5342,8 @@ var TDEF=[
 ['X','KeyX','지뢰종류','-','right:10px;bottom:134px;width:62px','tap'],
 ['V','KeyV','V','칼공격','right:10px;bottom:196px;width:64px','tap'],
 ['H','KeyH','H','치료','right:82px;bottom:196px;width:64px','tap'],
+['B','KeyB','B','드론기폭','right:10px;bottom:258px;width:64px','tap'],
+['N','KeyN','N','드론소음','right:80px;bottom:258px;width:64px','tap'],
 ['E','KeyE','E','수색','left:8px;bottom:10px;width:64px','hold'],
 ['F','KeyF','F','획득','left:8px;bottom:72px;width:64px','tap'],
 ['C','KeyC','C','살금','left:8px;bottom:134px;width:64px','tap'],
@@ -5185,7 +5433,7 @@ function tuiMove(e){
     var ks=Object.keys(tPz);
     if(ks.length>=2){
       var a=tPz[ks[0]],b=tPz[ks[1]],d=Math.hypot(a.x-b.x,a.y-b.y);
-      if(TI.pd>0){ZM=clamp(ZM*d/TI.pd,.6,1.8);SC=BASE*ZM}
+      if(TI.pd>0){ZM=clamp(ZM*d/TI.pd,.25,1.8);SC=BASE*ZM}
       TI.pd=d;
     }
   }
