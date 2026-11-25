@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v62</title>
+<title>Extract Zero v63</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -3000,13 +3000,18 @@ function deployCover(x,y,ang,t){
   spark(x,y,'#ff6a48',26);sfxTick(900,.3,.12,'sawtooth');shake=Math.min(12,shake+3);
   alertScavs(x,y,420);
 }
-/* ===== 폭발 철거: 파편 수류탄·지뢰 폭발이 반경 안의 벽을 허문다 (외곽 벽·잠금문·금고·락픽실은 보호) ===== */
-var wallDirty=false;
+/* ===== 폭발 철거: 파편 수류탄·지뢰 폭발이 반경 안의 벽을 허문다 (외곽 벽·잠금문·금고·락픽실은 보호) + v63: 상자·컨테이너·차량 등 엄폐물도 파괴 ===== */
+var wallDirty=false,BRK_KIND={crate:1,barrier:1,car:1,tank:1,bed:1,cont:1};
 function demolish(x,y,rad){
   if(!R||!(rad>0))return;
   var out=[],hit=false,i,j;
   for(i=0;i<solids.length;i++){
     var s=solids[i];
+    /* v63: 컨테이너·나무 상자·차량·바리케이드 같은 엄폐물도 폭발 반경 안이면 부서진다 (잠금문·금고·락픽실·임시 엄폐벽은 보호) */
+    if(BRK_KIND[s.kind]&&!s.keep&&!s.tmp&&!s.rock&&!s.svc&&!(R.pickRoom&&rectsOverlap(s,R.pickRoom,3))){
+      var bx=clamp(x,s.x,s.x+s.w),by=clamp(y,s.y,s.y+s.h);
+      if(dist(x,y,bx,by)<rad*1.2){hit=true;spark(s.x+s.w/2,s.y+s.h/2,s.kind==='crate'?'#8a7448':'#7d827a',8);continue}
+    }
     if(s.kind||s.rock||s.riv||s.svc||s.keep||s.x<=1||s.y<=1||s.x+s.w>=W-1||s.y+s.h>=H-1){out.push(s);continue}
     var horiz=s.w>=s.h,lo=horiz?s.y:s.x,hi=horiz?s.y+s.h:s.x+s.w,c=horiz?y:x,d=c<lo?lo-c:c>hi?c-hi:0;
     if(d>=rad){out.push(s);continue}
