@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v63</title>
+<title>Extract Zero v64</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -724,13 +724,13 @@ var THR={
   tStamp:{name:'검문 경보 섬광탄',mat:'stamp',n:2,val:5000,rar:3,kind:'flash',r:240,stun:3,col:'255,230,120',desc:'반경 240 · 시선이 닿는 스캐브 3초 기절 (나도 눈이 멈)'},
   tRelay:{name:'구조 조명탄',mat:'relay',n:3,val:8000,rar:4,kind:'flash',r:300,stun:4,col:'150,255,200',desc:'반경 300 · 시선이 닿는 스캐브 4초 기절 (나도 눈이 멈)'},
   tDcore:{name:'전자기 펄스탄',mat:'dcore',n:3,val:10000,rar:4,kind:'flash',r:270,stun:6,col:'160,200,255',desc:'반경 270 · 시선이 닿는 스캐브 6초 기절 (나도 눈이 멈)'},
-  tGold:{name:'황금 파편탄',mat:'gold',n:4,val:11000,rar:4,kind:'cluster',r:120,cr:[120,90,72],cd:[100,68,52],kids:[3,2],col:'255,210,90',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
-  tRebar:{name:'철근 파편탄',mat:'rebar',n:3,val:6500,rar:3,kind:'cluster',r:114,cr:[114,84],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
-  tSteel:{name:'강철 파편 폭탄',mat:'steel',n:5,val:13000,rar:4,kind:'cluster',r:138,cr:[138,108,84],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
+  tGold:{name:'황금 파편탄',mat:'gold',n:4,val:11000,rar:4,kind:'cluster',r:204,cr:[204,153,122],cd:[100,68,52],kids:[3,2],col:'255,210,90',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
+  tRebar:{name:'철근 파편탄',mat:'rebar',n:3,val:6500,rar:3,kind:'cluster',r:194,cr:[194,143],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
+  tSteel:{name:'강철 파편 폭탄',mat:'steel',n:5,val:13000,rar:4,kind:'cluster',r:235,cr:[235,184,143],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
   tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:60,hp:160,spd:210,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격 · 체력 160 · 스캐브가 쏘면 맞음(피격 판정 있음) · 60초'},
   tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:45,vr:280,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 45초 · 시야 확보 · 숨은 지뢰 탐지 · N 키로 소리를 내 스캐브 유인'},
-  tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:4,val:9000,rar:4,kind:'cluster',r:132,cr:[126,96,78],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
-  tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:8,val:22000,rar:5,kind:'cluster',r:156,cr:[156,120,96],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
+  tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:4,val:9000,rar:4,kind:'cluster',r:224,cr:[214,163,133],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
+  tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:8,val:22000,rar:5,kind:'cluster',r:265,cr:[265,204,163],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
 };
 function thrItem(id,n){return {k:'thr',id:id,n:n,r:THR[id].rar,v:THR[id].val}}
 var MATS={sensor:{name:'정찰 센서 모듈',src:'지뢰밭 폐기지',val:2500,rar:3},cata:{name:'촉매 앰풀',src:'화학 공단',val:3000,rar:3},ura:{name:'우라늄 광석',src:'방사능 폐광',val:4000,rar:4},frost:{name:'서리 결정',src:'설원 기지',val:3000,rar:3},cuff:{name:'락픽 부품',src:'교도소 폭동',val:2500,rar:3},seal:{name:'컨테이너 봉인',src:'항구 야간',val:2500,rar:3},sample:{name:'연구 샘플',src:'지하 연구소',val:3500,rar:3},gold:{name:'금괴 조각',src:'은행 강도',val:4500,rar:4},key:{name:'암호 키 조각',src:'군 보안 시설',val:3000,rar:3},
