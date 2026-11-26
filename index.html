@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v67</title>
+<title>Extract Zero v68</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -2143,6 +2143,18 @@ function scoutNoise(){
   if(!scouts.length)toast('전개한 감시 드론이 없습니다','#e8a33a');
   else if(!any)toast('드론 소음 재사용 대기 중','#e8a33a');
   else toast('드론이 소리를 냅니다 · 스캐브 유인','#7fe6ff');
+}
+/* v68: 한 번 발견한 상자는 안개·어둠 속에서도 계속 보인다 */
+function drawSeenConts(now,vx,vy,vw,vh){
+  for(var i=0;i<conts.length;i++){var c=conts[i];
+    if(!c.seen||c.gen||c.lock||c.corpse||c.ground||c.tier==null||!CONT_COL[c.tier])continue;
+    if(c.x<vx-40||c.x>vx+vw+40||c.y<vy-40||c.y>vy+vh+40||canSee(c.x,c.y))continue;
+    ctx.globalAlpha=.8;
+    ctx.fillStyle=CONT_COL[c.tier];ctx.fillRect(c.x-c.w/2,c.y-c.h/2,c.w,c.h);
+    ctx.strokeStyle=c.opened?'#2b2b25':(c.tier===3?'rgba(232,163,58,.8)':'#a8a48e');ctx.lineWidth=c.tier===3&&!c.opened?2.5:1.5;ctx.strokeRect(c.x-c.w/2,c.y-c.h/2,c.w,c.h);
+    ctx.fillStyle=c.opened?'#1c1e18':'rgba(255,255,255,.18)';ctx.fillRect(c.x-c.w/2+3,c.y-3,c.w-6,3);
+    ctx.globalAlpha=1;
+  }
 }
 /* v66: 정찰 드론 지뢰 탐지 반경 — 벽·안개·어둠 위에도 항상 보인다 */
 function drawScoutDet(now,vx,vy,vw,vh){
@@ -4488,7 +4500,7 @@ function render(){
   if(R.mines.length||blasts.length)drawMines(now,vx,vy,vw,vh);
   if(R.radZ&&R.radZ.length)drawRadSigns(now,vx,vy,vw,vh);
   /* containers, corpses */
-  for(i=0;i<conts.length;i++){var c=conts[i];if(c.x<vx-40||c.x>vx+vw+40||c.y<vy-40||c.y>vy+vh+40)continue;if(!canSee(c.x,c.y))continue;
+  for(i=0;i<conts.length;i++){var c=conts[i];if(c.x<vx-40||c.x>vx+vw+40||c.y<vy-40||c.y>vy+vh+40)continue;if(!canSee(c.x,c.y))continue;c.seen=1;
     if(c.gen){drawGen(c,now);continue}
     if(c.lock){ctx.fillStyle='#e0533f';ctx.font='900 18px "Big Shoulders Display","Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(LN(c.vid),c.x,c.y+6);continue}
     if(c.corpse){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.ang||0);if(c.sp)ctx.scale(1.4,1.4);ctx.fillStyle='#4a2a24';ctx.beginPath();ctx.ellipse(0,0,15,9,0,0,TAU);ctx.fill();ctx.fillStyle='#8a6a58';ctx.beginPath();ctx.arc(10,0,6,0,TAU);ctx.fill();ctx.restore();
@@ -4555,7 +4567,7 @@ function render(){
   ctx.restore();
   }
   if(R.map.lab)drawLabDark(z,vx,vy,now);if(R.map.port)drawPortDark(z,vx,vy,now);
-  drawScoutDet(now,vx,vy,vw,vh);
+  drawSeenConts(now,vx,vy,vw,vh);drawScoutDet(now,vx,vy,vw,vh);
   drawRanges(vx,vy,vw,vh);
   /* 소리 잔상: 보이지 않는 곳에서 난 스캐브 소리는 노란 잔상으로 남는다 */
   for(i=0;i<ghosts.length;i++){var gh=ghosts[i];
