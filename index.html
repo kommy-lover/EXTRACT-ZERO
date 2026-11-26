@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v70</title>
+<title>Extract Zero v71</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -614,7 +614,8 @@ function claim(x){
   if(cd.indexOf(x.id)<0){
     var it=null;
     if(x.item){try{it=JSON.parse(x.item)}catch(e){it=null}
-      if(!it||!window.XZG||!XZG.give(it)){msg(it?'보관함이 가득 찼습니다':'받을 수 없는 선물입니다');if(it)return}}
+      if(!it||!window.XZG||!XZG.valid(it)){msg('받을 수 없는 선물입니다');return}
+      if(!XZG.give(it)){msg('보관함 칸이 부족합니다. 창고를 정리하거나 확장한 뒤 받으세요');return}}
     if(x.cash>0&&window.XZG)XZG.addCash(Math.min(+x.cash,50000000));
     cd.push(x.id);wr('xz.claimed',cd.slice(-300))
   }
@@ -5454,7 +5455,7 @@ function renderCraft(){
 var GOK={gear:1,ammo:1,med:1,mine:1,part:1,mat:1,thr:1,weapon:1,val:1};
 function gOk(it){
   if(!it||typeof it!=='object'||!GOK[it.k])return false;
-  if(it.n!=null){it.n=Math.round(+it.n);if(!(it.n>=1&&it.n<=999))return false}
+  if(it.n!=null){it.n=Math.round(+it.n);if(!(it.n>=1&&it.n<=999999))return false}
   switch(it.k){
     case 'gear':return !!GEAR[it.t]&&it.c>=1&&it.c<=6;
     case 'ammo':return !!CAL[it.cal]&&it.n>=1;
@@ -5479,6 +5480,7 @@ window.XZG={
   give:function(it){
     if(!gOk(it))return false;it=JSON.parse(JSON.stringify(it));delete it.uid;if(it.w)delete it.w.uid;
     var ok=stashAdd(it);if(ok){persist();try{renderHub()}catch(e){}}return ok},
+  valid:function(it){return gOk(it)},
   cash:function(){return SAVE.cash|0},
   addCash:function(n){n=Math.round(+n)||0;SAVE.cash=Math.max(0,SAVE.cash+n);persist();try{renderHub()}catch(e){}}
 };
