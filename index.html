@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v69</title>
+<title>Extract Zero v70</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -463,6 +463,13 @@ body.tm .eq{padding:10px}
 #cloudBox .note{margin-top:10px;font-size:11px;color:#8d9685}
 #cloudBox .msg{min-height:18px;margin-top:8px;font-size:12px;color:#ffb09a}
 #cloudBox .msg.ok{color:#9fe08a}
+#cloudBox .tabs2{display:flex;gap:6px;margin:0 0 10px}
+#cloudBox .tabs2 button{min-width:0;padding:8px 4px;font-size:12px}
+#cloudBox .tabs2 button.cur{background:#3f6a32;border-color:#79b665}
+#cloudBox .li{display:flex;align-items:center;gap:6px;border:1px solid #3a4136;background:#10130f;padding:8px;margin:5px 0;font-size:13px;flex-wrap:wrap}
+#cloudBox .li span{flex:1;min-width:90px;word-break:break-all}
+#cloudBox .li button{flex:0 0 auto;min-width:0;padding:6px 10px;font-size:12px}
+#cloudBox select{width:100%;box-sizing:border-box;padding:10px;background:#0f120e;border:1px solid #4a5246;color:#e4e1d3;font:400 14px "Noto Sans KR",sans-serif}
 #cloudBox .sum{border:1px solid #3a4136;background:#10130f;padding:8px;margin:6px 0;font-size:12px}
 </style>
 <script>
@@ -472,7 +479,8 @@ body.tm .eq{padding:10px}
 var FB_CONFIG={apiKey:'AIzaSyAsBNSHIkQSEtfiXNdqZ2JicYzuFzSJOwQ',authDomain:'extract-zero.firebaseapp.com',projectId:'extract-zero',storageBucket:'extract-zero.firebasestorage.app',messagingSenderId:'111445288609',appId:'1:111445288609:web:03ae84e65121044eee72e0'};
 var SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 var KEY='xz.save.v2',CK='xz.cloud',DOM='@extractzero.game';
-var S={ready:false,cfg:!!FB_CONFIG.apiKey,user:null,auth:null,db:null,timer:0,busy:false,loading:false};
+var PR={},F={m:{},loaded:false},MB=[],unsub=null,TAB='info',GF=null;
+var S={open:false,ready:false,cfg:!!FB_CONFIG.apiKey,user:null,auth:null,db:null,timer:0,busy:false,loading:false};
 function ls(){return window.LS||window.localStorage}
 function rd(k){try{return JSON.parse(ls().getItem(k)||'null')}catch(e){return null}}
 function wr(k,v){try{ls().setItem(k,typeof v==='string'?v:JSON.stringify(v))}catch(e){}}
@@ -496,8 +504,9 @@ function errTxt(e){var c=e&&e.code||'';
   if(c==='auth/too-many-requests')return '시도가 너무 많습니다. 잠시 후 다시 하세요';
   if(c==='permission-denied'||c==='firestore/permission-denied')return '서버 접근 권한이 없습니다 (Firestore 규칙 확인)';
   return '오류: '+(c||(e&&e.message)||'알 수 없음')}
+function mailN(){var n=0;MB.forEach(function(x){if(x.type==='req'||x.type==='gift')n++});return n}
 function btn(){var b=$('cloudBtn');if(!b)return;
-  b.className=S.user?'on':'';b.textContent=S.user?('☁ '+idFrom(S.user)+(S.busy?' · 저장 중':'')):'☁ 로그인';}
+  b.className=S.user?'on':'';b.textContent=S.user?('☁ '+idFrom(S.user)+(mailN()?' · 우편 '+mailN():'')+(S.busy?' · 저장 중':'')):'☁ 로그인';}
 function msg(t,ok){var m=$('cloudMsg');if(!m)return;m.textContent=t||'';m.className='msg'+(ok?' ok':'')}
 function load(src,cb){var s=document.createElement('script');s.src=src;s.onload=function(){cb()};s.onerror=function(){cb(new Error('load'))};document.head.appendChild(s)}
 function init(cb){
@@ -508,15 +517,17 @@ function init(cb){
   load(SDK+'firebase-auth-compat.js',function(e){if(e){S.loading=false;return cb(e)}
   load(SDK+'firebase-firestore-compat.js',function(e){S.loading=false;if(e)return cb(e);
     try{firebase.initializeApp(FB_CONFIG);S.auth=firebase.auth();S.db=firebase.firestore();S.ready=true;
-      S.auth.onAuthStateChanged(function(u){S.user=u;btn();if(u)sync()});cb()}catch(x){cb(x)}})})})
+      S.auth.onAuthStateChanged(function(u){S.user=u;btn();if(u){startUser();sync()}else stopUser()});cb()}catch(x){cb(x)}})})})
 }
 function docRef(){return S.db.collection('saves').doc(S.user.uid)}
 function push(){
-  if(!S.user||!S.ready||S.busy)return Promise.resolve();
+  if(!S.user||!S.ready)return Promise.resolve();
+  if(S.busy&&S.cur)return S.cur.then(push);
   var j=ls().getItem(KEY);if(!j)return Promise.resolve();
   if(j.length>900000){msg('저장 용량이 너무 큽니다');return Promise.resolve()}
   S.busy=true;btn();var ts=Date.now();
-  return docRef().set({data:j,ts:ts,v:1}).then(function(){setCl({uid:S.user.uid,ts:ts,dirty:false})}).catch(function(e){var c=cl();c.dirty=true;setCl(c);var b=$('cloudBtn');if(b)b.className='err'}).then(function(){S.busy=false;btn()})
+  S.cur=Promise.resolve().then(function(){return docRef().set({data:j,ts:ts,v:1})}).then(function(){setCl({uid:S.user.uid,ts:ts,dirty:false})}).catch(function(e){var c=cl();c.dirty=true;setCl(c);var b=$('cloudBtn');if(b)b.className='err'}).then(function(){S.busy=false;btn()});
+  return S.cur
 }
 function queue(){
   var c=cl();c.dirty=true;if(S.user)c.uid=c.uid||S.user.uid;setCl(c);
@@ -531,6 +542,7 @@ function sync(){
     var c=cl(),local=ls().getItem(KEY);
     if(!snap.exists){if(local)push();return}
     var d=snap.data();
+    if(local===d.data){if(c.uid!==S.user.uid||c.ts!==d.ts||c.dirty)setCl({uid:S.user.uid,ts:d.ts,dirty:false});return}
     if(c.uid!==S.user.uid){if(local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
     if(d.ts>c.ts){if(c.dirty&&local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
     if(c.dirty)push()
@@ -544,18 +556,143 @@ function choose(d,local,lts){
   $('cmCloud').onclick=function(){useCloud(d)};
   $('cmLocal').onclick=function(){this.disabled=true;useLocal()};
 }
-function openMod(){$('cloudMod').className='open'}
-function closeMod(){$('cloudMod').className=''}
+
+/* ===== 친구 · 우편함 · 선물 ===== */
+function fsv(){return firebase.firestore.FieldValue}
+function myId(){return idFrom(S.user)}
+function startUser(){
+  var uid=S.user.uid,id=myId();
+  F={m:{},loaded:false};MB=[];
+  S.db.collection('names').doc(id).get().then(function(d){if(!d.exists)return S.db.collection('names').doc(id).set({uid:uid})}).catch(function(){});
+  S.db.collection('friends').doc(uid).get().then(function(d){F.m=(d.exists&&d.data().m)||{};F.loaded=true;procInbox();rerender()}).catch(function(){F.loaded=true});
+  if(unsub)unsub();
+  unsub=S.db.collection('inbox').doc(uid).collection('items').onSnapshot(function(q){
+    MB=[];q.forEach(function(d){var x=d.data();x.id=d.id;MB.push(x)});
+    MB.sort(function(a,b){return (b.ts||0)-(a.ts||0)});procInbox();btn();rerender()},function(){})
+}
+function stopUser(){if(unsub){unsub();unsub=null}F={m:{},loaded:false};MB=[];GF=null;TAB='info'}
+function mbDoc(id){return S.db.collection('inbox').doc(S.user.uid).collection('items').doc(id)}
+function procInbox(){
+  if(!S.user||!F.loaded)return;
+  MB.forEach(function(x){
+    if(x.type==='accept'&&!PR[x.id]){PR[x.id]=1;
+      var o={};o[x.from]=String(x.fromName||'').slice(0,20);F.m[x.from]=o[x.from];
+      S.db.collection('friends').doc(S.user.uid).set({m:o},{merge:true}).then(function(){return mbDoc(x.id).delete()}).catch(function(){})}
+  })
+}
+function rerender(){if(S.open&&S.user&&!S.choosing)renderMain()}
+function friendList(){return Object.keys(F.m).map(function(u){return {uid:u,name:F.m[u]}}).sort(function(a,b){return a.name<b.name?-1:1})}
+function sendMail(toUid,o){
+  var d={type:o.type,from:S.user.uid,fromName:myId(),item:o.item||'',cash:o.cash||0,ts:Date.now()};
+  return S.db.collection('inbox').doc(toUid).collection('items').add(d)
+}
+function addFriend(){
+  var id=($('fdId').value||'').trim().toLowerCase();
+  if(!idOk(id)){msg('아이디 형식을 확인하세요');return}
+  if(id===myId()){msg('내 아이디입니다');return}
+  msg('찾는 중…',true);
+  S.db.collection('names').doc(id).get().then(function(d){
+    if(!d.exists){msg('없는 아이디입니다');return}
+    var uid=d.data().uid;
+    if(F.m[uid]){msg('이미 친구입니다');return}
+    return sendMail(uid,{type:'req'}).then(function(){$('fdId').value='';msg('친구 요청을 보냈습니다',true)})
+  }).catch(function(e){msg(errTxt(e))})
+}
+function accept(x){
+  var o={};o[x.from]=String(x.fromName||'').slice(0,20);F.m[x.from]=o[x.from];
+  S.db.collection('friends').doc(S.user.uid).set({m:o},{merge:true})
+    .then(function(){return sendMail(x.from,{type:'accept'})})
+    .then(function(){return mbDoc(x.id).delete()}).then(function(){msg('친구가 되었습니다',true)}).catch(function(e){msg(errTxt(e))})
+}
+function decline(x){mbDoc(x.id).delete().catch(function(){})}
+function unfriend(uid){
+  var o={};o[uid]=fsv().delete();delete F.m[uid];renderMain();
+  S.db.collection('friends').doc(S.user.uid).set({m:o},{merge:true}).catch(function(e){msg(errTxt(e))})
+}
+function claim(x){
+  var cd=rd('xz.claimed')||[];
+  if(cd.indexOf(x.id)<0){
+    var it=null;
+    if(x.item){try{it=JSON.parse(x.item)}catch(e){it=null}
+      if(!it||!window.XZG||!XZG.give(it)){msg(it?'보관함이 가득 찼습니다':'받을 수 없는 선물입니다');if(it)return}}
+    if(x.cash>0&&window.XZG)XZG.addCash(Math.min(+x.cash,50000000));
+    cd.push(x.id);wr('xz.claimed',cd.slice(-300))
+  }
+  mbDoc(x.id).delete().then(function(){msg('선물을 받았습니다',true)}).catch(function(){})
+}
+function mailText(x){
+  if(x.type==='req')return '<b>'+esc(x.fromName)+'</b>님이 친구 요청을 보냈습니다';
+  var t='';if(x.item){try{t=XZG.describe(JSON.parse(x.item))}catch(e){t='아이템'}}
+  if(x.cash>0)t+=(t?' + ':'')+'₩'+fmt(x.cash);
+  return '<b>'+esc(x.fromName)+'</b>님의 선물<br><span style="color:#aab3a2">'+esc(t||'빈 선물')+'</span>'
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function giftForm(){
+  var b=$('cloudBody'),items=window.XZG?XZG.stash():[];
+  b.innerHTML='<h3>🎁 '+esc(GF.name)+'님께 선물</h3>'+
+  '<label for="gfType">종류</label><select id="gfType"><option value="cash">현금</option><option value="item">보관함 아이템</option></select>'+
+  '<div id="gfCash"><label for="gfAmt">금액 (보유 ₩'+fmt(window.XZG?XZG.cash():0)+')</label><input id="gfAmt" type="number" inputmode="numeric" min="1" value="1000"></div>'+
+  '<div id="gfItem" style="display:none"><label for="gfSel">아이템</label><select id="gfSel">'+items.map(function(i){return '<option value="'+i.uid+'">'+esc(i.name)+(i.n>1?' ×'+i.n:'')+'</option>'}).join('')+'</select><label for="gfQty">수량</label><input id="gfQty" type="number" inputmode="numeric" min="1" value="1"></div>'+
+  '<div class="row"><button class="pri" id="gfSend">보내기</button><button id="gfBack">뒤로</button></div><div class="msg" id="cloudMsg"></div>'+
+  '<div class="note">친구가 다음에 접속하면 우편함에서 받을 수 있습니다. 보낸 선물은 되돌릴 수 없습니다.</div>';
+  $('gfType').onchange=function(){var c=this.value==='cash';$('gfCash').style.display=c?'':'none';$('gfItem').style.display=c?'none':''};
+  $('gfBack').onclick=function(){GF=null;TAB='friends';renderMain()};
+  $('gfSend').onclick=function(){
+    var btnS=this,toUid=GF.uid;
+    if($('gfType').value==='cash'){
+      var n=Math.floor(+$('gfAmt').value);
+      if(!(n>=1)||n>XZG.cash()){msg('금액을 확인하세요');return}
+      btnS.disabled=true;XZG.addCash(-n);
+      sendMail(toUid,{type:'gift',cash:n}).then(function(){msg('₩'+fmt(n)+' 선물을 보냈습니다',true);btnS.disabled=false;giftForm();msg('₩'+fmt(n)+' 선물을 보냈습니다',true)})
+        .catch(function(e){XZG.addCash(n);btnS.disabled=false;msg(errTxt(e)+' · 현금은 돌려받았습니다')})
+    }else{
+      var uid=+$('gfSel').value,q=Math.floor(+$('gfQty').value)||1;
+      if(!uid){msg('보낼 아이템이 없습니다');return}
+      var out=XZG.take(uid,q);if(!out){msg('아이템을 찾을 수 없습니다');return}
+      btnS.disabled=true;var nm=XZG.describe(out);
+      sendMail(toUid,{type:'gift',item:JSON.stringify(out)}).then(function(){giftForm();msg(nm+' 선물을 보냈습니다',true)})
+        .catch(function(e){XZG.give(out);btnS.disabled=false;msg(errTxt(e)+' · 아이템은 돌려받았습니다')})
+    }
+  }
+}
+function renderMain(){
+  if(!S.user)return view();
+  if(GF)return giftForm();
+  var b=$('cloudBody'),mn=mailN();
+  var tabs='<div class="tabs2"><button data-t="info" class="'+(TAB==='info'?'cur':'')+'">내 계정</button><button data-t="friends" class="'+(TAB==='friends'?'cur':'')+'">친구</button><button data-t="mail" class="'+(TAB==='mail'?'cur':'')+'">우편함'+(mn?' ('+mn+')':'')+'</button></div>';
+  var h='';
+  if(TAB==='info'){
+    h='<h3>☁ '+esc(myId())+'</h3><div class="note" style="margin:0 0 8px">로그인됨 · 진행 상황이 자동으로 저장됩니다.</div>'+
+    '<div class="row"><button class="pri" id="cmSync">지금 저장</button><button class="dng" id="cmOut">로그아웃</button></div>'
+  }else if(TAB==='friends'){
+    var fl=friendList();
+    h='<label for="fdId">친구 추가 (상대 아이디)</label><input id="fdId" autocapitalize="none" spellcheck="false"><div class="row"><button class="pri" id="fdAdd">요청 보내기</button></div>'+
+    '<div class="sub" style="margin:12px 0 4px;color:#aab3a2;font-size:12px">친구 '+fl.length+'명</div>'+
+    (fl.length?fl.map(function(f){return '<div class="li"><span>'+esc(f.name)+'</span><button class="pri" data-gift="'+esc(f.uid)+'">선물</button><button class="dng" data-un="'+esc(f.uid)+'">삭제</button></div>'}).join(''):'<div class="note">아직 친구가 없습니다.</div>')
+  }else{
+    var ms=MB.filter(function(x){return x.type==='req'||x.type==='gift'});
+    h=ms.length?ms.map(function(x,i){return '<div class="li"><span>'+mailText(x)+'</span>'+(x.type==='req'?'<button class="pri" data-ac="'+i+'">수락</button><button data-dc="'+i+'">거절</button>':'<button class="pri" data-cl="'+i+'">받기</button>')+'</div>'}).join(''):'<div class="note">받은 우편이 없습니다.</div>';
+    window.__ms=ms
+  }
+  b.innerHTML=tabs+h+'<div class="row"><button id="cmClose">닫기</button></div><div class="msg" id="cloudMsg"></div>';
+  Array.prototype.forEach.call(b.querySelectorAll('[data-t]'),function(e){e.onclick=function(){TAB=this.getAttribute('data-t');renderMain()}});
+  if($('cmSync'))$('cmSync').onclick=function(){msg('저장 중…',true);var c=cl();c.dirty=true;setCl(c);push().then(function(){msg(cl().dirty?'저장 실패 · 연결 확인':'저장 완료',!cl().dirty)})};
+  if($('cmOut'))$('cmOut').onclick=function(){S.auth.signOut().then(function(){S.user=null;btn();view()})};
+  if($('fdAdd'))$('fdAdd').onclick=addFriend;
+  Array.prototype.forEach.call(b.querySelectorAll('[data-gift]'),function(e){e.onclick=function(){var u=this.getAttribute('data-gift');GF={uid:u,name:F.m[u]};renderMain()}});
+  Array.prototype.forEach.call(b.querySelectorAll('[data-un]'),function(e){e.onclick=function(){if(this.getAttribute('data-c')){unfriend(this.getAttribute('data-un'))}else{this.setAttribute('data-c','1');this.textContent='정말 삭제?'}}});
+  Array.prototype.forEach.call(b.querySelectorAll('[data-ac]'),function(e){e.onclick=function(){accept(window.__ms[+this.getAttribute('data-ac')])}});
+  Array.prototype.forEach.call(b.querySelectorAll('[data-dc]'),function(e){e.onclick=function(){decline(window.__ms[+this.getAttribute('data-dc')])}});
+  Array.prototype.forEach.call(b.querySelectorAll('[data-cl]'),function(e){e.onclick=function(){claim(window.__ms[+this.getAttribute('data-cl')])}});
+  $('cmClose').onclick=closeMod;
+}
+function openMod(){$('cloudMod').className='open';S.open=true}
+function closeMod(){$('cloudMod').className='';S.open=false;GF=null}
 function view(){
   if(S.choosing)return;
   var b=$('cloudBody');
   if(!S.cfg){b.innerHTML='<h3>계정 로그인</h3><div class="note">서버 설정이 아직 연결되지 않았습니다. 설정값을 넣으면 아이디와 비밀번호로 저장을 불러올 수 있습니다.</div><div class="row"><button id="cmClose">닫기</button></div>';$('cmClose').onclick=closeMod;return}
-  if(S.user){
-    b.innerHTML='<h3>☁ '+idFrom(S.user)+'</h3><div class="note" style="margin:0 0 8px">로그인됨 · 진행 상황이 자동으로 저장됩니다.</div>'+
-    '<div class="row"><button class="pri" id="cmSync">지금 저장</button><button class="dng" id="cmOut">로그아웃</button></div><div class="row"><button id="cmClose">닫기</button></div><div class="msg" id="cloudMsg"></div>';
-    $('cmSync').onclick=function(){msg('저장 중…',true);var c=cl();c.dirty=true;setCl(c);push().then(function(){msg(cl().dirty?'저장 실패 · 연결 확인':'저장 완료',!cl().dirty)})};
-    $('cmOut').onclick=function(){S.auth.signOut().then(function(){S.user=null;btn();view()})};
-    $('cmClose').onclick=closeMod;return}
+  if(S.user){renderMain();return}
   b.innerHTML='<h3>계정 로그인</h3>'+
   '<label for="cmId">아이디 (영문 소문자·숫자·_ 3~20자)</label><input id="cmId" autocomplete="username" autocapitalize="none" spellcheck="false">'+
   '<label for="cmPw">비밀번호 (6자 이상)</label><input id="cmPw" type="password" autocomplete="current-password">'+
@@ -5313,6 +5450,38 @@ function renderCraft(){
   h+='</div></div></div>';
   return h;
 }
+/* v70: 친구 선물용 다리 — 클라우드 모듈이 보관함·현금을 안전하게 다룬다 */
+var GOK={gear:1,ammo:1,med:1,mine:1,part:1,mat:1,thr:1,weapon:1,val:1};
+function gOk(it){
+  if(!it||typeof it!=='object'||!GOK[it.k])return false;
+  if(it.n!=null){it.n=Math.round(+it.n);if(!(it.n>=1&&it.n<=999))return false}
+  switch(it.k){
+    case 'gear':return !!GEAR[it.t]&&it.c>=1&&it.c<=6;
+    case 'ammo':return !!CAL[it.cal]&&it.n>=1;
+    case 'med':return !!MEDS[it.id];
+    case 'mat':return !!MATS[it.id];
+    case 'thr':return !!THR[it.id];
+    case 'weapon':return !!it.w&&!!WEAP[it.w.id];
+    case 'val':return typeof it.name==='string'&&it.name.length<40&&+it.v>=0&&+it.v<=1000000;
+    default:return true;
+  }
+}
+window.XZG={
+  stash:function(){var o=[];SAVE.stash.forEach(function(it){if(!GOK[it.k])return;var inf=itemInfo(it);o.push({uid:it.uid,name:inf.name,n:it.n||1,r:itemRar(it)})});return o},
+  describe:function(it){try{var inf=itemInfo(it);return inf.name+((it.n||1)>1?' ×'+it.n:'')}catch(e){return '알 수 없는 아이템'}},
+  take:function(uid,qty){
+    var it=stashFind(uid);if(!it||!GOK[it.k])return null;
+    var have=it.n||1,out;qty=Math.max(1,Math.min((qty|0)||1,have));
+    if(have>1&&qty<have){out=JSON.parse(JSON.stringify(it));out.n=qty;it.n-=qty}
+    else{out=JSON.parse(JSON.stringify(stashDel(uid)))}
+    delete out.uid;if(out.w)delete out.w.uid;
+    persist();try{fixLD();renderHub()}catch(e){}return out},
+  give:function(it){
+    if(!gOk(it))return false;it=JSON.parse(JSON.stringify(it));delete it.uid;if(it.w)delete it.w.uid;
+    var ok=stashAdd(it);if(ok){persist();try{renderHub()}catch(e){}}return ok},
+  cash:function(){return SAVE.cash|0},
+  addCash:function(n){n=Math.round(+n)||0;SAVE.cash=Math.max(0,SAVE.cash+n);persist();try{renderHub()}catch(e){}}
+};
 function renderHub(sig){
   relief();
   var tabs=[['stash','보관함 · 출격 준비'],['shop','상점'],['craft','제작소']];
