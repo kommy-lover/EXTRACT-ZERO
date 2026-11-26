@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v66</title>
+<title>Extract Zero v67</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -728,7 +728,7 @@ var THR={
   tRebar:{name:'철근 파편탄',mat:'rebar',n:2,val:6500,rar:3,kind:'cluster',r:194,cr:[194,143],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
   tSteel:{name:'강철 파편 폭탄',mat:'steel',n:3,val:13000,rar:4,kind:'cluster',r:235,cr:[235,184,143],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
   tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:60,hp:160,spd:210,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격 · 체력 160 · 스캐브가 쏘면 맞음(피격 판정 있음) · 60초'},
-  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:120,vr:560,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 120초 · 시야 반경 560 · 반경 300 안의 숨은 지뢰는 벽·어둠에 상관없이 항상 표시 · N 키로 소리를 내 스캐브 유인'},
+  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:120,vr:560,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 120초 · 시야 반경 560 · 반경 200 원 안은 벽·어둠에 상관없이 항상 시야 확보(적·지뢰 모두 보임) · N 키로 소리를 내 스캐브 유인'},
   tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:2,val:9000,rar:4,kind:'cluster',r:224,cr:[214,163,133],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
   tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:4,val:22000,rar:5,kind:'cluster',r:265,cr:[265,204,163],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
 };
@@ -2077,8 +2077,8 @@ function updDrones(dt){
     }
   }
 }
-var SCOUT_DET=300;
-var CDRONE_VIS=700;
+var SCOUT_DET=200;
+var CDRONE_VIS=420;
 function hitCombat(d,dmg,hx,hy){
   if(d.hp<=0)return;
   d.hp-=dmg;d.hit=.15;addFloater(d.x,d.y-18,'-'+Math.round(dmg),'#ff8a3a');spark(hx==null?d.x:hx,hy==null?d.y:hy,'#ffd27a',5);sfxTick(900,.05,.07,'square');
@@ -2091,7 +2091,7 @@ function updCombat(dt){
     if(d.t>=d.dur){cdrones.splice(i,1);toast('전투 드론 가동 종료','#e8a33a');continue}
     var bx=mouse.wx,by=mouse.wy,dd=dist(d.x,d.y,bx,by);
     if(dd>6){var st=Math.min(dd,Math.max(d.spd*.25,Math.min(d.spd,dd*5))*dt);d.x+=(bx-d.x)/dd*st;d.y+=(by-d.y)/dd*st}
-    var tg=null,bd=520;
+    var tg=null,bd=340;
     for(var j=0;j<scavs.length;j++){var sc=scavs[j];if(sc.dead||(sc.cage&&sc.cage.locked))continue;
       var q=dist(d.x,d.y,sc.x,sc.y);if(q<bd&&los(d.x,d.y,sc.x,sc.y)&&!(thrZ.length&&smokeBlock(d.x,d.y,sc.x,sc.y))){bd=q;tg=sc}}
     if(tg){
@@ -2100,7 +2100,7 @@ function updCombat(dt){
       if(d.fireT<=0&&Math.abs(df)<.25){
         d.fireT=.14;d.flash=.05;
         var an=d.ang+(Math.random()+Math.random()-1)*.06;
-        bullets.push({x:d.x+Math.cos(d.ang)*16,y:d.y+Math.sin(d.ang)*16,vx:Math.cos(an)*1000,vy:Math.sin(an)*1000,dmg:17,cls:3,dist:0,maxD:560,rng:560,src:'a',fall:.18});
+        bullets.push({x:d.x+Math.cos(d.ang)*16,y:d.y+Math.sin(d.ang)*16,vx:Math.cos(an)*1000,vy:Math.sin(an)*1000,dmg:10,cls:3,dist:0,maxD:360,rng:360,src:'a',fall:.18});
         sfxTick(1900,.04,.05,'square');alertScavs(d.x,d.y,450);
       }
     }
@@ -4395,7 +4395,11 @@ function computeVis(){
     rv.push({x:x,y:y,r:rad,cand:cd,poly:pl});
   }
   for(i=0;i<R.mines.length;i++){var cm=R.mines[i];if(!cm.dead&&cm.own&&cm.ty===C4_TY)addRv(cm.x,cm.y,C4_VIS)}
-  for(i=0;i<scouts.length;i++)addRv(scouts[i].x,scouts[i].y,scouts[i].r);
+  for(i=0;i<scouts.length;i++){var sd0=scouts[i];addRv(sd0.x,sd0.y,sd0.r);
+    /* v67: 감시 드론 탐지 원 안은 벽·어둠과 상관없이 항상 시야가 있다 */
+    if(!sd0.bomb&&Math.abs(sd0.x-cam.x)<=mx+SCOUT_DET&&Math.abs(sd0.y-cam.y)<=my+SCOUT_DET){
+      var fp=[],fk;for(fk=0;fk<48;fk++){var fa=fk/48*TAU;fp.push(sd0.x+Math.cos(fa)*SCOUT_DET,sd0.y+Math.sin(fa)*SCOUT_DET)}
+      rv.push({x:sd0.x,y:sd0.y,r:SCOUT_DET,cand:[],poly:fp})}}
   for(i=0;i<cdrones.length;i++)addRv(cdrones[i].x,cdrones[i].y,CDRONE_VIS);
   R.rv=rv;
 }
