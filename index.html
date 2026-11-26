@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v68</title>
+<title>Extract Zero v69</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -445,6 +445,149 @@ body.tm .eq{padding:10px}
   </div>
 </div>
 
+<style>
+.cloudbar{display:flex;justify-content:flex-end;margin:0 0 8px}
+#cloudBtn{font:700 12px "Noto Sans KR",sans-serif;border:1px solid #4a5246;background:#1d231c;color:#cfe3c4;padding:7px 12px;border-radius:2px;cursor:pointer}
+#cloudBtn.on{border-color:#79b665;color:#9fe08a}
+#cloudBtn.err{border-color:#e0533f;color:#ffb09a}
+#cloudMod{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
+#cloudMod.open{display:flex}
+#cloudBox{width:min(380px,100%);max-height:100%;overflow:auto;background:#161a15;border:1px solid #4a5246;padding:16px;color:#e4e1d3;font:400 13px/1.5 "Noto Sans KR",sans-serif}
+#cloudBox h3{margin:0 0 10px;font:900 18px/1.2 "Noto Sans KR",sans-serif}
+#cloudBox label{display:block;margin:8px 0 3px;font-size:12px;color:#aab3a2}
+#cloudBox input{width:100%;box-sizing:border-box;padding:10px;background:#0f120e;border:1px solid #4a5246;color:#e4e1d3;font:400 15px "Noto Sans KR",sans-serif}
+#cloudBox .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+#cloudBox button{flex:1;min-width:110px;padding:10px;border:1px solid #4a5246;background:#232a21;color:#e4e1d3;font:700 13px "Noto Sans KR",sans-serif;cursor:pointer}
+#cloudBox button.pri{background:#3f6a32;border-color:#79b665}
+#cloudBox button.dng{border-color:#e0533f;color:#ffb09a}
+#cloudBox .note{margin-top:10px;font-size:11px;color:#8d9685}
+#cloudBox .msg{min-height:18px;margin-top:8px;font-size:12px;color:#ffb09a}
+#cloudBox .msg.ok{color:#9fe08a}
+#cloudBox .sum{border:1px solid #3a4136;background:#10130f;padding:8px;margin:6px 0;font-size:12px}
+</style>
+<script>
+/* ===== v69: 아이디·비밀번호 로그인 + 클라우드 저장 (Firebase) =====
+   아래 FB_CONFIG 에 Firebase 웹앱 설정값을 넣으면 활성화됩니다. 비어 있으면 로그인 버튼이 안내만 보여 줍니다. */
+(function(){
+var FB_CONFIG={apiKey:'',authDomain:'',projectId:'',storageBucket:'',messagingSenderId:'',appId:''};
+var SDK='https://www.gstatic.com/firebasejs/10.12.2/';
+var KEY='xz.save.v2',CK='xz.cloud',DOM='@extractzero.game';
+var S={ready:false,cfg:!!FB_CONFIG.apiKey,user:null,auth:null,db:null,timer:0,busy:false,loading:false};
+function ls(){return window.LS||window.localStorage}
+function rd(k){try{return JSON.parse(ls().getItem(k)||'null')}catch(e){return null}}
+function wr(k,v){try{ls().setItem(k,typeof v==='string'?v:JSON.stringify(v))}catch(e){}}
+function $(id){return document.getElementById(id)}
+function cl(){return rd(CK)||{uid:null,ts:0,dirty:false}}
+function setCl(o){wr(CK,o)}
+function fmt(n){return Math.round(n||0).toLocaleString('ko-KR')}
+function when(ts){if(!ts)return '-';var d=new Date(ts);return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function sum(json,ts){var o=null;try{o=JSON.parse(json)}catch(e){}
+  if(!o)return '<div class="sum">저장 없음</div>';
+  return '<div class="sum">현금 ₩'+fmt(o.cash)+' · 출격 '+(o.raids|0)+'회 · 탈출 '+(o.ext|0)+'회<br><span style="color:#8d9685">저장 시각 '+when(ts)+'</span></div>'}
+function idOk(s){return /^[a-z0-9_]{3,20}$/.test(s)}
+function mail(id){return id.toLowerCase()+DOM}
+function idFrom(u){return u&&u.email?u.email.replace(DOM,''):''}
+function errTxt(e){var c=e&&e.code||'';
+  if(c==='auth/email-already-in-use')return '이미 사용 중인 아이디입니다';
+  if(c==='auth/weak-password')return '비밀번호는 6자 이상이어야 합니다';
+  if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials')return '아이디 또는 비밀번호가 틀렸습니다';
+  if(c==='auth/network-request-failed')return '인터넷 연결을 확인하세요';
+  if(c==='auth/operation-not-allowed')return '서버에서 이메일/비밀번호 로그인이 꺼져 있습니다';
+  if(c==='auth/too-many-requests')return '시도가 너무 많습니다. 잠시 후 다시 하세요';
+  if(c==='permission-denied'||c==='firestore/permission-denied')return '서버 접근 권한이 없습니다 (Firestore 규칙 확인)';
+  return '오류: '+(c||(e&&e.message)||'알 수 없음')}
+function btn(){var b=$('cloudBtn');if(!b)return;
+  b.className=S.user?'on':'';b.textContent=S.user?('☁ '+idFrom(S.user)+(S.busy?' · 저장 중':'')):'☁ 로그인';}
+function msg(t,ok){var m=$('cloudMsg');if(!m)return;m.textContent=t||'';m.className='msg'+(ok?' ok':'')}
+function load(src,cb){var s=document.createElement('script');s.src=src;s.onload=function(){cb()};s.onerror=function(){cb(new Error('load'))};document.head.appendChild(s)}
+function init(cb){
+  if(S.ready)return cb();
+  if(!S.cfg)return cb(new Error('nocfg'));
+  if(S.loading)return;S.loading=true;
+  load(SDK+'firebase-app-compat.js',function(e){if(e){S.loading=false;return cb(e)}
+  load(SDK+'firebase-auth-compat.js',function(e){if(e){S.loading=false;return cb(e)}
+  load(SDK+'firebase-firestore-compat.js',function(e){S.loading=false;if(e)return cb(e);
+    try{firebase.initializeApp(FB_CONFIG);S.auth=firebase.auth();S.db=firebase.firestore();S.ready=true;
+      S.auth.onAuthStateChanged(function(u){S.user=u;btn();if(u)sync()});cb()}catch(x){cb(x)}})})})
+}
+function docRef(){return S.db.collection('saves').doc(S.user.uid)}
+function push(){
+  if(!S.user||!S.ready||S.busy)return Promise.resolve();
+  var j=ls().getItem(KEY);if(!j)return Promise.resolve();
+  if(j.length>900000){msg('저장 용량이 너무 큽니다');return Promise.resolve()}
+  S.busy=true;btn();var ts=Date.now();
+  return docRef().set({data:j,ts:ts,v:1}).then(function(){setCl({uid:S.user.uid,ts:ts,dirty:false})}).catch(function(e){var c=cl();c.dirty=true;setCl(c);var b=$('cloudBtn');if(b)b.className='err'}).then(function(){S.busy=false;btn()})
+}
+function queue(){
+  var c=cl();c.dirty=true;if(S.user)c.uid=c.uid||S.user.uid;setCl(c);
+  if(!S.user||!S.ready)return;
+  clearTimeout(S.timer);S.timer=setTimeout(push,4000)
+}
+function useCloud(d){window.__noPersist=true;wr(KEY,d.data);setCl({uid:S.user.uid,ts:d.ts,dirty:false});location.reload()}
+function useLocal(){setCl({uid:S.user.uid,ts:0,dirty:true});return push().then(function(){S.choosing=false;closeMod()})}
+function sync(){
+  if(!S.user)return;
+  docRef().get().then(function(snap){
+    var c=cl(),local=ls().getItem(KEY);
+    if(!snap.exists){if(local)push();return}
+    var d=snap.data();
+    if(c.uid!==S.user.uid){if(local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
+    if(d.ts>c.ts){if(c.dirty&&local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
+    if(c.dirty)push()
+  }).catch(function(e){var b=$('cloudBtn');if(b)b.className='err'})
+}
+function choose(d,local,lts){
+  S.choosing=true;openMod();
+  $('cloudBody').innerHTML='<h3>저장 선택</h3><div class="note" style="margin:0 0 6px">이 기기와 계정의 저장이 서로 다릅니다. 하나를 고르세요. 고르지 않은 쪽은 사라집니다.</div>'+
+  '<div>☁ 계정 저장</div>'+sum(d.data,d.ts)+'<div>📱 이 기기 저장</div>'+sum(local,lts)+
+  '<div class="row"><button class="pri" id="cmCloud">계정 저장 사용</button><button class="dng" id="cmLocal">이 기기 저장으로 덮어쓰기</button></div><div class="msg" id="cloudMsg"></div>';
+  $('cmCloud').onclick=function(){useCloud(d)};
+  $('cmLocal').onclick=function(){this.disabled=true;useLocal()};
+}
+function openMod(){$('cloudMod').className='open'}
+function closeMod(){$('cloudMod').className=''}
+function view(){
+  if(S.choosing)return;
+  var b=$('cloudBody');
+  if(!S.cfg){b.innerHTML='<h3>계정 로그인</h3><div class="note">서버 설정이 아직 연결되지 않았습니다. 설정값을 넣으면 아이디와 비밀번호로 저장을 불러올 수 있습니다.</div><div class="row"><button id="cmClose">닫기</button></div>';$('cmClose').onclick=closeMod;return}
+  if(S.user){
+    b.innerHTML='<h3>☁ '+idFrom(S.user)+'</h3><div class="note" style="margin:0 0 8px">로그인됨 · 진행 상황이 자동으로 저장됩니다.</div>'+
+    '<div class="row"><button class="pri" id="cmSync">지금 저장</button><button class="dng" id="cmOut">로그아웃</button></div><div class="row"><button id="cmClose">닫기</button></div><div class="msg" id="cloudMsg"></div>';
+    $('cmSync').onclick=function(){msg('저장 중…',true);var c=cl();c.dirty=true;setCl(c);push().then(function(){msg(cl().dirty?'저장 실패 · 연결 확인':'저장 완료',!cl().dirty)})};
+    $('cmOut').onclick=function(){S.auth.signOut().then(function(){S.user=null;btn();view()})};
+    $('cmClose').onclick=closeMod;return}
+  b.innerHTML='<h3>계정 로그인</h3>'+
+  '<label for="cmId">아이디 (영문 소문자·숫자·_ 3~20자)</label><input id="cmId" autocomplete="username" autocapitalize="none" spellcheck="false">'+
+  '<label for="cmPw">비밀번호 (6자 이상)</label><input id="cmPw" type="password" autocomplete="current-password">'+
+  '<div class="row"><button class="pri" id="cmIn">로그인</button><button id="cmUp">회원가입</button></div><div class="row"><button id="cmClose">닫기</button></div>'+
+  '<div class="msg" id="cloudMsg"></div><div class="note">비밀번호를 잊으면 복구할 수 없습니다. 계정 저장은 로그인한 뒤 자동으로 올라갑니다.</div>';
+  function go(create){
+    var id=($('cmId').value||'').trim().toLowerCase(),pw=$('cmPw').value||'';
+    if(!idOk(id)){msg('아이디 형식을 확인하세요');return}
+    if(pw.length<6){msg('비밀번호는 6자 이상이어야 합니다');return}
+    msg('처리 중…',true);
+    var p=create?S.auth.createUserWithEmailAndPassword(mail(id),pw):S.auth.signInWithEmailAndPassword(mail(id),pw);
+    p.then(function(){view()}).catch(function(e){msg(errTxt(e))})}
+  $('cmIn').onclick=function(){go(false)};$('cmUp').onclick=function(){go(true)};$('cmClose').onclick=closeMod;
+}
+function mount(){
+  var hub=$('hub');if(!hub||$('cloudBtn'))return;
+  var bar=document.createElement('div');bar.className='cloudbar';bar.innerHTML='<button id="cloudBtn" type="button">☁ 로그인</button>';hub.insertBefore(bar,hub.firstChild);
+  var m=document.createElement('div');m.id='cloudMod';m.innerHTML='<div id="cloudBox"><div id="cloudBody"></div></div>';document.body.appendChild(m);
+  m.addEventListener('pointerdown',function(e){if(e.target===m&&!$('cmCloud'))closeMod()});
+  ['keydown','keyup','keypress'].forEach(function(t){m.addEventListener(t,function(e){e.stopPropagation()})});
+  $('cloudBtn').onclick=function(){openMod();
+    if(!S.cfg||S.ready){view();return}
+    $('cloudBody').innerHTML='<h3>계정 로그인</h3><div class="note">서버에 연결하는 중…</div>';
+    init(function(e){if(e){$('cloudBody').innerHTML='<h3>계정 로그인</h3><div class="note">서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요.</div><div class="row"><button id="cmClose">닫기</button></div>';$('cmClose').onclick=closeMod;return}view()})}
+}
+window.XZC={queue:queue,flush:function(){if(S.user&&cl().dirty)push()}};
+document.addEventListener('visibilitychange',function(){if(document.hidden)window.XZC.flush()});
+window.addEventListener('pagehide',function(){window.XZC.flush()});
+function boot(){mount();if(S.cfg)init(function(){})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
 <script>
 (function(){
 'use strict';
@@ -787,7 +930,7 @@ try{
   if(sv&&typeof sv==='object'){for(var k0 in sv)SAVE[k0]=sv[k0]}
   else{var o1=JSON.parse(LS.getItem('xz.save.v1')||'null');if(o1&&typeof o1==='object')['raids','ext','dead','best','total'].forEach(function(k){if(typeof o1[k]==='number')SAVE[k]=o1[k]})}
 }catch(e){}
-function persist(){if(window.__noPersist)return;try{LS.setItem('xz.save.v2',JSON.stringify(SAVE))}catch(e){}}
+function persist(){if(window.__noPersist)return;try{LS.setItem('xz.save.v2',JSON.stringify(SAVE));if(window.XZC)XZC.queue()}catch(e){}}
 function nid(){return SAVE.uid++}
 
 /* 작전 모드: 스캐브 등급/무장, 전리품 희귀도, 입장 장비가치 */
