@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v81</title>
+<title>Extract Zero v82</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -738,10 +738,10 @@ function adList(){
 function adDraw(){
   var cs=$('adChips'),ls2=$('adList');if(!cs||!ls2)return;
   var L=AD.cat0||(AD.cat0=XZG.catalog());
-  cs.innerHTML=CATS.map(function(c){var n=c[0]==='all'?L.length:L.filter(function(i){return i.cat===c[0]}).length;return '<button type="button" data-ac="'+c[0]+'" class="'+(AD.cat===c[0]?'cur':'')+'">'+c[1]+' '+n+'</button>'}).join('');
+  cs.innerHTML=CATS.map(function(c){var n=c[0]==='all'?L.length:L.filter(function(i){return i.cat===c[0]}).length;return '<button type="button" data-adc="'+c[0]+'" class="'+(AD.cat===c[0]?'cur':'')+'">'+c[1]+' '+n+'</button>'}).join('');
   var X=adList().slice(0,150);
   ls2.innerHTML=X.length?X.map(function(i){return '<div class="pit'+(AD.sel===i.i?' sel':'')+'" data-i="'+i.i+'"><i style="background:'+(RCOL[i.r]||RCOL[1])+'"></i><b>'+esc(i.name)+'<small>'+esc(i.sub)+'</small></b></div>'}).join('')+(adList().length>150?'<div class="note" style="padding:8px">검색으로 더 좁혀 보세요 (150개까지 표시)</div>':''):'<div class="note" style="padding:10px">없습니다.</div>';
-  Array.prototype.forEach.call(cs.querySelectorAll('[data-ac]'),function(e){e.onclick=function(){AD.cat=this.getAttribute('data-ac');adDraw()}});
+  Array.prototype.forEach.call(cs.querySelectorAll('[data-adc]'),function(e){e.onclick=function(){AD.cat=this.getAttribute('data-adc');adDraw()}});
   Array.prototype.forEach.call(ls2.querySelectorAll('[data-i]'),function(e){e.onclick=function(){AD.sel=+this.getAttribute('data-i');adDraw();adSel()}});
 }
 function adSel(){
