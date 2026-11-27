@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v82</title>
+<title>Extract Zero v83</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -820,6 +820,32 @@ function adBind(){
   if($('adLoad'))$('adLoad').onclick=adLoad;
   adPlDraw()
 }
+function delAcct(){
+  if(isAdm()){msg('관리자 계정은 삭제할 수 없습니다');return}
+  var pw=$('dlPw').value,id=($('dlId').value||'').trim().toLowerCase();
+  if(!pw){msg('비밀번호를 입력하세요');return}
+  if(id!==myId()){msg('아이디가 일치하지 않습니다');return}
+  var bt=$('dlBtn');
+  if(!bt.getAttribute('data-c')){bt.setAttribute('data-c','1');bt.textContent='정말 삭제? 한 번 더 누르세요';return}
+  bt.disabled=true;msg('삭제 중…',true);
+  var u=S.user,uid=u.uid,name=myId(),db=S.db;
+  var cred=firebase.auth.EmailAuthProvider.credential(u.email,pw);
+  u.reauthenticateWithCredential(cred).then(function(){
+    if(unsub){unsub();unsub=null}if(unsubS){unsubS();unsubS=null}
+    return db.collection('inbox').doc(uid).collection('items').get()
+  }).then(function(q){
+    var ps=[];q.forEach(function(d){ps.push(db.collection('inbox').doc(uid).collection('items').doc(d.id).delete())});return Promise.all(ps)
+  }).then(function(){return Promise.all([db.collection('saves').doc(uid).delete(),db.collection('friends').doc(uid).delete(),db.collection('names').doc(name).delete()])})
+  .then(function(){return u.delete()}).then(function(){
+    try{ls().removeItem(CK)}catch(e){}
+    S.user=null;F={m:{},loaded:false};MB=[];TAB='info';btn();view();msg('계정을 삭제했습니다',true)
+  }).catch(function(e){
+    bt.disabled=false;bt.removeAttribute('data-c');bt.textContent='계정 삭제';
+    var c=e&&e.code||'';
+    msg(c==='auth/wrong-password'||c==='auth/invalid-credential'||c==='auth/invalid-login-credentials'?'비밀번호가 틀렸습니다':errTxt(e));
+    if(S.user&&!unsub)startUser()
+  })
+}
 function changePw(){
   var o=$('pwOld').value,n=$('pwNew').value,n2=$('pwNew2').value;
   if(!o||!n||!n2){msg('모두 입력하세요');return}
@@ -842,7 +868,8 @@ function renderMain(){
   if(TAB==='info'){
     h='<h3>☁ '+esc(myId())+'</h3><div class="note" style="margin:0 0 8px">로그인됨 · 진행 상황이 자동으로 저장됩니다.</div>'+
     '<div class="row"><button class="pri" id="cmSync">지금 저장</button><button class="dng" id="cmOut">로그아웃</button></div>'+
-    '<h3 style="margin-top:16px;font-size:15px">비밀번호 변경</h3><label for="pwOld">현재 비밀번호</label><input id="pwOld" type="password" autocomplete="current-password"><label for="pwNew">새 비밀번호 (6자 이상)</label><input id="pwNew" type="password" autocomplete="new-password"><label for="pwNew2">새 비밀번호 확인</label><input id="pwNew2" type="password" autocomplete="new-password"><div class="row"><button id="pwBtn">비밀번호 변경</button></div>'
+    '<h3 style="margin-top:16px;font-size:15px">비밀번호 변경</h3><label for="pwOld">현재 비밀번호</label><input id="pwOld" type="password" autocomplete="current-password"><label for="pwNew">새 비밀번호 (6자 이상)</label><input id="pwNew" type="password" autocomplete="new-password"><label for="pwNew2">새 비밀번호 확인</label><input id="pwNew2" type="password" autocomplete="new-password"><div class="row"><button id="pwBtn">비밀번호 변경</button></div>'+
+    (isAdm()?'':'<h3 style="margin-top:16px;font-size:15px;color:#ffb09a">계정 삭제</h3><div class="note" style="margin:0 0 6px">계정과 서버에 저장된 진행 상황, 친구 목록, 우편이 모두 삭제되며 되돌릴 수 없습니다. 이 기기의 게임 저장은 그대로 남습니다.</div><label for="dlPw">비밀번호</label><input id="dlPw" type="password" autocomplete="current-password"><label for="dlId">확인을 위해 내 아이디를 입력</label><input id="dlId" autocapitalize="none" spellcheck="false" autocomplete="off"><div class="row"><button class="dng" id="dlBtn">계정 삭제</button></div>')
   }else if(TAB==='friends'){
     var fl=friendList();
     h='<label for="fdId">친구 추가 (상대 아이디)</label><input id="fdId" autocapitalize="none" spellcheck="false"><div class="row"><button class="pri" id="fdAdd">요청 보내기</button></div>'+
@@ -861,6 +888,7 @@ function renderMain(){
   if($('cmOut'))$('cmOut').onclick=function(){S.auth.signOut().then(function(){S.user=null;btn();view()})};
   if($('fdAdd'))$('fdAdd').onclick=addFriend;
   if($('pwBtn'))$('pwBtn').onclick=changePw;
+  if($('dlBtn'))$('dlBtn').onclick=delAcct;
   if(TAB==='admin'&&isAdm())adBind();
   Array.prototype.forEach.call(b.querySelectorAll('[data-gift]'),function(e){e.onclick=function(){var u=this.getAttribute('data-gift');GF={uid:u,name:F.m[u],mode:'cash'};GS.sel=null;GS.q='';GS.cat='all';renderMain()}});
   Array.prototype.forEach.call(b.querySelectorAll('[data-un]'),function(e){e.onclick=function(){if(this.getAttribute('data-c')){unfriend(this.getAttribute('data-un'))}else{this.setAttribute('data-c','1');this.textContent='정말 삭제?'}}});
