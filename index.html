@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v72</title>
+<title>Extract Zero v73</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -490,7 +490,7 @@ body.tm .eq{padding:10px}
 var FB_CONFIG={apiKey:'AIzaSyAsBNSHIkQSEtfiXNdqZ2JicYzuFzSJOwQ',authDomain:'extract-zero.firebaseapp.com',projectId:'extract-zero',storageBucket:'extract-zero.firebasestorage.app',messagingSenderId:'111445288609',appId:'1:111445288609:web:03ae84e65121044eee72e0'};
 var SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 var KEY='xz.save.v2',CK='xz.cloud',DOM='@extractzero.game';
-var PR={},F={m:{},loaded:false},MB=[],unsub=null,TAB='info',GF=null;
+var PR={},F={m:{},loaded:false},MB=[],unsub=null,unsubS=null,TAB='info',GF=null;
 var S={open:false,ready:false,cfg:!!FB_CONFIG.apiKey,user:null,auth:null,db:null,timer:0,busy:false,loading:false};
 function ls(){return window.LS||window.localStorage}
 function rd(k){try{return JSON.parse(ls().getItem(k)||'null')}catch(e){return null}}
@@ -554,6 +554,7 @@ function sync(){
     if(!snap.exists){if(local)push();return}
     var d=snap.data();
     if(local===d.data){if(c.uid!==S.user.uid||c.ts!==d.ts||c.dirty)setCl({uid:S.user.uid,ts:d.ts,dirty:false});return}
+    if(d.adm&&d.ts>(c.uid===S.user.uid?c.ts:0))return useCloud(d);
     if(c.uid!==S.user.uid){if(local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
     if(d.ts>c.ts){if(c.dirty&&local&&local!==d.data)return choose(d,local,c.ts);return useCloud(d)}
     if(c.dirty)push()
@@ -576,12 +577,18 @@ function startUser(){
   F={m:{},loaded:false};MB=[];
   S.db.collection('names').doc(id).get().then(function(d){if(!d.exists)return S.db.collection('names').doc(id).set({uid:uid})}).catch(function(){});
   S.db.collection('friends').doc(uid).get().then(function(d){F.m=(d.exists&&d.data().m)||{};F.loaded=true;procInbox();rerender()}).catch(function(){F.loaded=true});
+  if(unsubS)unsubS();
+  unsubS=S.db.collection('saves').doc(uid).onSnapshot(function(d){
+    if(!d.exists)return;var x=d.data();if(!x.adm)return;
+    var c=cl();if(c.uid===uid&&x.ts<=c.ts)return;if(ls().getItem(KEY)===x.data)return;
+    if(window.XZG&&XZG.inRaid()){S.pendAdm=x;return}
+    useCloud(x)},function(){});
   if(unsub)unsub();
   unsub=S.db.collection('inbox').doc(uid).collection('items').onSnapshot(function(q){
     MB=[];q.forEach(function(d){var x=d.data();x.id=d.id;MB.push(x)});
     MB.sort(function(a,b){return (b.ts||0)-(a.ts||0)});procInbox();btn();rerender()},function(){})
 }
-function stopUser(){if(unsub){unsub();unsub=null}F={m:{},loaded:false};MB=[];GF=null;TAB='info'}
+function stopUser(){if(unsub){unsub();unsub=null}if(unsubS){unsubS();unsubS=null}F={m:{},loaded:false};MB=[];GF=null;TAB='info'}
 function mbDoc(id){return S.db.collection('inbox').doc(S.user.uid).collection('items').doc(id)}
 function procInbox(){
   if(!S.user||!F.loaded)return;
@@ -641,7 +648,7 @@ function mailText(x){
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var RCOL=['#444','#9aa39a','#6fbf5a','#4aa3e0','#a566e0','#e8a33a','#e0533f'];
 var CATS=[['all','전체'],['weapon','무기'],['gear','방어구'],['ammo','탄약'],['med','의약품'],['thrmine','투척·지뢰'],['matpart','재료'],['val','물품']];
-function catOf(k){return k==='weapon'?'weapon':k==='gear'?'gear':k==='ammo'?'ammo':k==='med'?'med':(k==='thr'||k==='mine')?'thrmine':(k==='mat'||k==='part')?'matpart':'val'}
+function catOf(k){return k==='weapon'?'weapon':k==='gear'?'gear':k==='ammo'?'ammo':k==='med'?'med':(k==='thr'||k==='mine')?'thrmine':(k==='mat'||k==='part'||k==='pick')?'matpart':'val'}
 var GS={cat:'all',q:'',sel:null,items:[]};
 function pickList(){
   var q=GS.q.trim().toLowerCase();
@@ -699,6 +706,102 @@ function giftForm(){
     }
   }
 }
+
+/* ===== v73: 관리자 도구 (서버 규칙이 admin 계정만 허용) ===== */
+var AD={tg:'me',mode:'item',cat:'all',q:'',sel:null,who:'',names:null,cat0:null,pl:null};
+function isAdm(){return !!S.user&&idFrom(S.user)==='admin'}
+function adNames(cb){
+  S.db.collection('names').get().then(function(q){var a=[];q.forEach(function(d){a.push({name:d.id,uid:d.data().uid})});a.sort(function(x,y){return x.name<y.name?-1:1});AD.names=a;cb&&cb()}).catch(function(e){msg(errTxt(e))})
+}
+function adList(){
+  var L=(AD.cat0||(AD.cat0=XZG.catalog())),q=AD.q.trim().toLowerCase();
+  return L.map(function(x,i){x.i=i;return x}).filter(function(x){return (AD.cat==='all'||x.cat===AD.cat)&&(!q||x.name.toLowerCase().indexOf(q)>=0)}).sort(function(a,b){return (b.r-a.r)||(a.name<b.name?-1:1)})
+}
+function adDraw(){
+  var cs=$('adChips'),ls2=$('adList');if(!cs||!ls2)return;
+  var L=AD.cat0||(AD.cat0=XZG.catalog());
+  cs.innerHTML=CATS.map(function(c){var n=c[0]==='all'?L.length:L.filter(function(i){return i.cat===c[0]}).length;return '<button type="button" data-ac="'+c[0]+'" class="'+(AD.cat===c[0]?'cur':'')+'">'+c[1]+' '+n+'</button>'}).join('');
+  var X=adList().slice(0,150);
+  ls2.innerHTML=X.length?X.map(function(i){return '<div class="pit'+(AD.sel===i.i?' sel':'')+'" data-i="'+i.i+'"><i style="background:'+(RCOL[i.r]||RCOL[1])+'"></i><b>'+esc(i.name)+'<small>'+esc(i.sub)+'</small></b></div>'}).join('')+(adList().length>150?'<div class="note" style="padding:8px">검색으로 더 좁혀 보세요 (150개까지 표시)</div>':''):'<div class="note" style="padding:10px">없습니다.</div>';
+  Array.prototype.forEach.call(cs.querySelectorAll('[data-ac]'),function(e){e.onclick=function(){AD.cat=this.getAttribute('data-ac');adDraw()}});
+  Array.prototype.forEach.call(ls2.querySelectorAll('[data-i]'),function(e){e.onclick=function(){AD.sel=+this.getAttribute('data-i');adDraw();adSel()}});
+}
+function adSel(){
+  var b=$('adSelBox');if(!b)return;
+  if(AD.sel==null){b.innerHTML='<span style="color:#8d9685">위 목록에서 아이템을 누르세요</span>';return}
+  var x=AD.cat0[AD.sel],t=x.t;
+  b.innerHTML='<div>선택: <b>'+esc(x.name)+'</b></div><label for="adQty">수량'+(t==='weapon'||t==='gear'||t==='val'?' (한 번에 최대 60개)':'')+'</label><input id="adQty" type="number" inputmode="numeric" min="1" value="1">'+
+   (t==='weapon'||t==='gear'||t==='ammo'?'<label for="adCls">등급 (1~6)</label><input id="adCls" type="number" inputmode="numeric" min="1" max="6" value="6">':'')+
+   (t==='mine'?'<label for="adPw">지뢰 위력</label><input id="adPw" type="number" inputmode="numeric" min="1" max="12" value="12">':'')
+}
+function adHtml(){
+  var h='<div class="note" style="margin:0 0 6px">관리자 도구 · 서버 규칙으로 보호됩니다</div>'+
+  '<div class="chips"><button data-adt="me" class="'+(AD.tg==='me'?'cur':'')+'">내 보관함</button><button data-adt="all" class="'+(AD.tg==='all'?'cur':'')+'">모든 플레이어</button><button data-adt="one" class="'+(AD.tg==='one'?'cur':'')+'">특정 플레이어</button></div>';
+  if(AD.tg==='one'){
+    h+=AD.names?'<select id="adWho"><option value="">플레이어 선택</option>'+AD.names.filter(function(n){return n.uid!==S.user.uid}).map(function(n){return '<option value="'+esc(n.uid)+'"'+(AD.who===n.uid?' selected':'')+'>'+esc(n.name)+'</option>'}).join('')+'</select>':'<div class="note">플레이어 목록을 불러오는 중…</div>';
+  }
+  h+='<div class="chips"><button data-adm="item" class="'+(AD.mode==='item'?'cur':'')+'">아이템</button><button data-adm="cash" class="'+(AD.mode==='cash'?'cur':'')+'">현금</button></div>';
+  if(AD.mode==='cash')h+='<label for="adAmt">금액</label><input id="adAmt" type="number" inputmode="numeric" min="1" value="1000000">';
+  else h+='<input id="adQ" placeholder="이름으로 찾기" value="'+esc(AD.q)+'" autocomplete="off"><div class="chips" id="adChips"></div><div class="plist" id="adList"></div><div class="selbox" id="adSelBox"></div>';
+  h+='<div class="row"><button class="pri" id="adGo">'+(AD.tg==='me'?'내 보관함에 지급':AD.tg==='all'?'모든 플레이어에게 보내기':'선택한 플레이어에게 보내기')+'</button></div>'+
+  '<h3 style="margin:16px 0 6px;font-size:15px">플레이어 목록</h3><div class="row" style="margin-top:0"><button id="adLoad">불러오기</button></div><div id="adPl"></div>';
+  return h
+}
+function adGo(){
+  var n,cash=0,item='',spec=null,c,pw;
+  if(AD.mode==='cash'){cash=Math.floor(+$('adAmt').value);if(!(cash>=1)){msg('금액을 확인하세요');return}}
+  else{
+    if(AD.sel==null){msg('아이템을 선택하세요');return}
+    spec=AD.cat0[AD.sel];n=Math.floor(+$('adQty').value)||1;c=$('adCls')?+$('adCls').value:6;pw=$('adPw')?+$('adPw').value:12;
+    if(!(n>=1)){msg('수량을 확인하세요');return}
+  }
+  if(AD.tg==='me'){
+    if(cash){XZG.addCash(cash);msg('₩'+fmt(cash)+' 지급 완료',true);return}
+    var d=XZG.grant(spec,n,c,pw);msg(d?(spec.name+' 지급 완료'+(d>1?' ×'+d:'')):'보관함 칸이 부족합니다 (창고를 확장하세요)',!!d);return
+  }
+  if(!cash){var it=XZG.make(spec,n,c,pw);if(!it){msg('만들 수 없는 아이템입니다');return}item=JSON.stringify(it);if(item.length>7500){msg('아이템 데이터가 너무 큽니다');return}}
+  var targets=[];
+  if(AD.tg==='one'){var w=$('adWho')?$('adWho').value:'';if(!w){msg('플레이어를 선택하세요');return}targets=[w]}
+  else{(AD.names||[]).forEach(function(x){if(x.uid!==S.user.uid)targets.push(x.uid)});if(!targets.length){msg('보낼 플레이어가 없습니다');return}}
+  msg('보내는 중… ('+targets.length+'명)',true);
+  Promise.all(targets.map(function(u){return sendMail(u,{type:'gift',item:item,cash:cash})})).then(function(){msg(targets.length+'명에게 보냈습니다',true)}).catch(function(e){msg(errTxt(e))})
+}
+function adLoad(){
+  var box=$('adPl');if(box)box.innerHTML='<div class="note">불러오는 중…</div>';
+  Promise.all([S.db.collection('names').get(),S.db.collection('saves').get(),S.db.collection('backups').get()]).then(function(r){
+    var sv={},bk={},rows=[];
+    r[1].forEach(function(d){sv[d.id]=d.data()});r[2].forEach(function(d){bk[d.id]=d.data()});
+    r[0].forEach(function(d){var u=d.data().uid,x=sv[u],o=null;if(x){try{o=JSON.parse(x.data)}catch(e){}}rows.push({name:d.id,uid:u,cash:o?(o.cash!=null?o.cash:30000):null,raids:o?(o.raids|0):0,ext:o?(o.ext|0):0,ts:x?x.ts:0,has:!!x,bk:bk[u]||null})});
+    rows.sort(function(a,b){return a.name<b.name?-1:1});AD.pl=rows;adPlDraw()
+  }).catch(function(e){msg(errTxt(e))})
+}
+function adPlDraw(){
+  var box=$('adPl');if(!box||!AD.pl)return;
+  box.innerHTML=AD.pl.map(function(r,i){return '<div class="li"><span><b>'+esc(r.name)+'</b><br><span style="color:#aab3a2;font-size:12px">'+(r.has?('₩'+fmt(r.cash)+' · 출격 '+r.raids+'회 · 탈출 '+r.ext+'회<br>'+when(r.ts)):'저장 없음')+(r.bk?'<br>백업 '+when(r.bk.at):'')+'</span></span>'+(r.uid===S.user.uid?'':'<button class="dng" data-rs="'+i+'">초기화</button>'+(r.bk?'<button data-rt="'+i+'">되돌리기</button>':''))+'</div>'}).join('')||'<div class="note">플레이어가 없습니다.</div>';
+  Array.prototype.forEach.call(box.querySelectorAll('[data-rs]'),function(e){e.onclick=function(){if(this.getAttribute('data-c')){adReset(AD.pl[+this.getAttribute('data-rs')])}else{this.setAttribute('data-c','1');this.textContent='정말 초기화?'}}});
+  Array.prototype.forEach.call(box.querySelectorAll('[data-rt]'),function(e){e.onclick=function(){if(this.getAttribute('data-c')){adRestore(AD.pl[+this.getAttribute('data-rt')])}else{this.setAttribute('data-c','1');this.textContent='정말 되돌리기?'}}})
+}
+function adReset(r){
+  msg('초기화 중…',true);
+  S.db.collection('saves').doc(r.uid).get().then(function(d){
+    var p=d.exists?S.db.collection('backups').doc(r.uid).set({data:d.data().data,ts:d.data().ts||0,name:r.name,at:Date.now()}):Promise.resolve();
+    return p}).then(function(){return S.db.collection('saves').doc(r.uid).set({data:'{}',ts:Date.now(),v:1,adm:true})})
+  .then(function(){msg(r.name+' 저장을 초기화했습니다 (백업됨)',true);adLoad()}).catch(function(e){msg(errTxt(e))})
+}
+function adRestore(r){
+  msg('되돌리는 중…',true);
+  S.db.collection('backups').doc(r.uid).get().then(function(d){if(!d.exists)throw {code:'none'};return S.db.collection('saves').doc(r.uid).set({data:d.data().data,ts:Date.now(),v:1,adm:true})})
+  .then(function(){msg(r.name+' 저장을 되돌렸습니다',true);adLoad()}).catch(function(e){msg(e&&e.code==='none'?'백업이 없습니다':errTxt(e))})
+}
+function adBind(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-adt]'),function(e){e.onclick=function(){AD.tg=this.getAttribute('data-adt');if(AD.tg!=='me'&&!AD.names)adNames(function(){renderMain()});renderMain()}});
+  Array.prototype.forEach.call(document.querySelectorAll('[data-adm]'),function(e){e.onclick=function(){AD.mode=this.getAttribute('data-adm');renderMain()}});
+  if($('adWho'))$('adWho').onchange=function(){AD.who=this.value};
+  if($('adQ')){$('adQ').oninput=function(){AD.q=this.value;adDraw()};adDraw();adSel()}
+  if($('adGo'))$('adGo').onclick=adGo;
+  if($('adLoad'))$('adLoad').onclick=adLoad;
+  adPlDraw()
+}
 function changePw(){
   var o=$('pwOld').value,n=$('pwNew').value,n2=$('pwNew2').value;
   if(!o||!n||!n2){msg('모두 입력하세요');return}
@@ -716,7 +819,7 @@ function renderMain(){
   if(!S.user)return view();
   if(GF)return giftForm();
   var b=$('cloudBody'),mn=mailN();
-  var tabs='<div class="tabs2"><button data-t="info" class="'+(TAB==='info'?'cur':'')+'">내 계정</button><button data-t="friends" class="'+(TAB==='friends'?'cur':'')+'">친구</button><button data-t="mail" class="'+(TAB==='mail'?'cur':'')+'">우편함'+(mn?' ('+mn+')':'')+'</button></div>';
+  var tabs='<div class="tabs2"><button data-t="info" class="'+(TAB==='info'?'cur':'')+'">내 계정</button><button data-t="friends" class="'+(TAB==='friends'?'cur':'')+'">친구</button><button data-t="mail" class="'+(TAB==='mail'?'cur':'')+'">우편함'+(mn?' ('+mn+')':'')+'</button>'+(isAdm()?'<button data-t="admin" class="'+(TAB==='admin'?'cur':'')+'">관리자</button>':'')+'</div>';
   var h='';
   if(TAB==='info'){
     h='<h3>☁ '+esc(myId())+'</h3><div class="note" style="margin:0 0 8px">로그인됨 · 진행 상황이 자동으로 저장됩니다.</div>'+
@@ -727,6 +830,8 @@ function renderMain(){
     h='<label for="fdId">친구 추가 (상대 아이디)</label><input id="fdId" autocapitalize="none" spellcheck="false"><div class="row"><button class="pri" id="fdAdd">요청 보내기</button></div>'+
     '<div class="sub" style="margin:12px 0 4px;color:#aab3a2;font-size:12px">친구 '+fl.length+'명</div>'+
     (fl.length?fl.map(function(f){return '<div class="li"><span>'+esc(f.name)+'</span><button class="pri" data-gift="'+esc(f.uid)+'">선물</button><button class="dng" data-un="'+esc(f.uid)+'">삭제</button></div>'}).join(''):'<div class="note">아직 친구가 없습니다.</div>')
+  }else if(TAB==='admin'&&isAdm()){
+    h=adHtml()
   }else{
     var ms=MB.filter(function(x){return x.type==='req'||x.type==='gift'});
     h=ms.length?ms.map(function(x,i){return '<div class="li"><span>'+mailText(x)+'</span>'+(x.type==='req'?'<button class="pri" data-ac="'+i+'">수락</button><button data-dc="'+i+'">거절</button>':'<button class="pri" data-cl="'+i+'">받기</button>')+'</div>'}).join(''):'<div class="note">받은 우편이 없습니다.</div>';
@@ -738,6 +843,7 @@ function renderMain(){
   if($('cmOut'))$('cmOut').onclick=function(){S.auth.signOut().then(function(){S.user=null;btn();view()})};
   if($('fdAdd'))$('fdAdd').onclick=addFriend;
   if($('pwBtn'))$('pwBtn').onclick=changePw;
+  if(TAB==='admin'&&isAdm())adBind();
   Array.prototype.forEach.call(b.querySelectorAll('[data-gift]'),function(e){e.onclick=function(){var u=this.getAttribute('data-gift');GF={uid:u,name:F.m[u],mode:'cash'};GS.sel=null;GS.q='';GS.cat='all';renderMain()}});
   Array.prototype.forEach.call(b.querySelectorAll('[data-un]'),function(e){e.onclick=function(){if(this.getAttribute('data-c')){unfriend(this.getAttribute('data-un'))}else{this.setAttribute('data-c','1');this.textContent='정말 삭제?'}}});
   Array.prototype.forEach.call(b.querySelectorAll('[data-ac]'),function(e){e.onclick=function(){accept(window.__ms[+this.getAttribute('data-ac')])}});
@@ -777,6 +883,7 @@ function mount(){
     $('cloudBody').innerHTML='<h3>계정 로그인</h3><div class="note">서버에 연결하는 중…</div>';
     init(function(e){if(e){$('cloudBody').innerHTML='<h3>계정 로그인</h3><div class="note">서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요.</div><div class="row"><button id="cmClose">닫기</button></div>';$('cmClose').onclick=closeMod;return}view()})}
 }
+setInterval(function(){if(S.pendAdm&&S.user&&!(window.XZG&&XZG.inRaid())){var x=S.pendAdm;S.pendAdm=null;useCloud(x)}},4000);
 window.XZC={queue:queue,flush:function(){if(S.user&&cl().dirty)push()}};
 document.addEventListener('visibilitychange',function(){if(document.hidden)window.XZC.flush()});
 window.addEventListener('pagehide',function(){window.XZC.flush()});
@@ -5510,7 +5617,7 @@ function renderCraft(){
   return h;
 }
 /* v70: 친구 선물용 다리 — 클라우드 모듈이 보관함·현금을 안전하게 다룬다 */
-var GOK={gear:1,ammo:1,med:1,mine:1,part:1,mat:1,thr:1,weapon:1,val:1};
+var GOK={gear:1,ammo:1,med:1,mine:1,part:1,mat:1,thr:1,weapon:1,val:1,pick:1};
 function gOk(it){
   if(!it||typeof it!=='object'||!GOK[it.k])return false;
   if(it.n!=null){it.n=Math.round(+it.n);if(!(it.n>=1&&it.n<=999999))return false}
@@ -5539,6 +5646,43 @@ window.XZG={
     if(!gOk(it))return false;it=JSON.parse(JSON.stringify(it));delete it.uid;if(it.w)delete it.w.uid;
     var ok=stashAdd(it);if(ok){persist();try{renderHub()}catch(e){}}return ok},
   valid:function(it){return gOk(it)},
+  /* v73: 관리자 전용 — 모든 아이템 카탈로그와 생성기 */
+  catalog:function(){
+    var o=[],id;
+    Object.keys(WEAP).forEach(function(i){var w=WEAP[i];o.push({cat:'weapon',t:'weapon',id:i,name:w.name,r:w.rar,sub:'무기'})});
+    Object.keys(GEAR).forEach(function(i){o.push({cat:'gear',t:'gear',id:i,name:GEAR[i].name,r:6,sub:'방어구 · 등급 선택'})});
+    Object.keys(CAL).forEach(function(i){o.push({cat:'ammo',t:'ammo',id:i,name:CAL[i].name,r:4,sub:'탄약 · 등급 선택'})});
+    Object.keys(MEDS).forEach(function(i){var m=MEDS[i];o.push({cat:'med',t:'med',id:i,name:m.name,r:m.rar||1,sub:'의약품'})});
+    Object.keys(THR).forEach(function(i){o.push({cat:'thrmine',t:'thr',id:i,name:THR[i].name,r:THR[i].rar,sub:'투척류'})});
+    for(var ty=0;ty<MTY_NAME.length;ty++)o.push({cat:'thrmine',t:'mine',id:String(ty),name:MTY_NAME[ty],r:ty?5:3,sub:'지뢰 · 위력 선택'});
+    Object.keys(MATS).forEach(function(i){o.push({cat:'matpart',t:'mat',id:i,name:MATS[i].name,r:MATS[i].rar,sub:'재료 · '+(MATS[i].src||'')})});
+    o.push({cat:'matpart',t:'part',id:'part',name:'지뢰 부품',r:2,sub:'재료'});
+    o.push({cat:'matpart',t:'pick',id:'pick',name:'락픽',r:PICK_RECIPE.rar,sub:'락픽 전용 방 입장'});
+    for(var r=1;r<=6;r++)(VALS[r]||[]).forEach(function(n){o.push({cat:'val',t:'val',id:n+'|'+r,name:n,r:r,sub:'고가 물품 · ₩'+fmt(VAL_PRICE[r])})});
+    var seen={};Object.keys(PKR_LOOT).forEach(function(m){PKR_LOOT[m].forEach(function(e){if(seen[e[0]])return;seen[e[0]]=1;o.push({cat:'val',t:'val',id:e[0]+'|'+e[1]+'|x',name:e[0],r:e[1],sub:'락픽실 전용 · ₩'+fmt(VAL_PRICE[e[1]])})})});
+    return o},
+  make:function(sp,n,c,pw){
+    n=Math.max(1,Math.min(999999,Math.round(+n)||1));c=Math.round(+c)||6;
+    switch(sp.t){
+      case 'weapon':{var wc=clamp(c,1,6);var cal=WEAP[sp.id].cal,mx=(QTY[cal]||[0,0,0]).length-1;return {k:'weapon',w:newW(sp.id,clamp(wc,1,Math.max(1,mx))),r:WEAP[sp.id].rar,n:1}}
+      case 'gear':{var g=GEAR[sp.id],cc=clamp(c,1,6);return gearItem(sp.id,mkGear(sp.id,cc))}
+      case 'ammo':{var mx2=(QTY[sp.id]||[0,0]).length-1;return {k:'ammo',cal:sp.id,c:clamp(c,1,Math.max(1,mx2)),n:n}}
+      case 'med':return {k:'med',id:sp.id,n:n};
+      case 'thr':return thrItem(sp.id,n);
+      case 'mine':return mineItem(n,clamp(Math.round(+pw)||MINE_PW_BASE,1,MINE_PW_MAX)+100*(+sp.id));
+      case 'mat':return matItem(sp.id,n);
+      case 'part':return partItem(n);
+      case 'pick':return {k:'pick',n:n,r:PICK_RECIPE.rar,v:PICK_RECIPE.val};
+      case 'val':{var a=sp.id.split('|'),rr=+a[1];return {k:'val',name:a[0],r:rr,v:Math.round(VAL_PRICE[rr]*(a[2]?1.15:1)),n:1,pkx:a[2]?1:undefined}}
+    }
+    return null},
+  grant:function(sp,n,c,pw){
+    var it=XZG.make(sp,n,c,pw);if(!it)return 0;
+    var stack=it.k==='ammo'||it.k==='med'||it.k==='mine'||it.k==='part'||it.k==='mat'||it.k==='thr'||it.k==='pick';
+    var cnt=stack?1:Math.min(Math.max(1,Math.round(+n)||1),60),done=0;
+    for(var i=0;i<cnt;i++){var x=i?XZG.make(sp,n,c,pw):it;if(!stashAdd(x))break;done++}
+    persist();try{renderHub()}catch(e){}return stack?(done?Math.round(+n)||1:0):done},
+  inRaid:function(){return state==='raid'},
   cash:function(){return SAVE.cash|0},
   addCash:function(n){n=Math.round(+n)||0;SAVE.cash=Math.max(0,SAVE.cash+n);persist();try{renderHub()}catch(e){}}
 };
