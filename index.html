@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v92</title>
+<title>Extract Zero v93</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -1425,7 +1425,11 @@ var MODES={
     desc:'정예 스캐브 위주 · 고등급 장비 · 신화(Ⅵ) 전리품 가능'}
 };
 if(!MODES[SAVE.mode])SAVE.mode='n';
-try{if(typeof SAVE.touch!=='boolean')SAVE.touch=!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)}catch(e){SAVE.touch=false}
+/* 터치 모드는 기기별 설정: 클라우드/다른 기기 세이브의 값에 덮어쓰이지 않게 이 기기 localStorage 에 따로 둔다 */
+function devFlag(){try{return localStorage.getItem('xz.devtouch')}catch(e){return null}}
+function isMobileDev(){try{return !!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||(navigator.maxTouchPoints>0&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent))}catch(e){return false}}
+function devTouch(){var v=devFlag();if(v==='1')return true;if(v==='0')return false;return isMobileDev()}
+SAVE.touch=devTouch();
 /* 맵: 크기, 시간, 건물/엄폐물 밀도, 지형 색 */
 var MAPS={
   o:{id:'o',name:'외곽 부지',col:'#79b665',W:3600,H:2800,time:1200,sm:1,bn:20,bw:[240,420],bh:[200,340],gap:150,cv:76,ck:[['crate',50],['barrier',30],['car',20]],out:24,
@@ -6379,7 +6383,9 @@ function applyTouchUI(){
   if(!TI.on)resetTouch();
   resize();
 }
-function setTouch(v){SAVE.touch=!!v;persist();applyTouchUI()}
+function setTouch(v){SAVE.touch=!!v;try{localStorage.setItem('xz.devtouch',v?'1':'0')}catch(e){}persist();applyTouchUI()}
+/* 폰인데 아직 PC 모드면 첫 터치에서 자동으로 터치 모드 전환 */
+window.addEventListener('touchstart',function(){if(!TI.on&&devFlag()==null&&isMobileDev()){SAVE.touch=true;applyTouchUI()}},{once:true,passive:true});
 $('touchChk').addEventListener('change',function(){setTouch(this.checked)});
 /* 인벤토리 길게 누르기 = 우클릭(버리기·가방으로) */
 (function(){
