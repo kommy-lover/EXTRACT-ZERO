@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v89</title>
+<title>Extract Zero v90</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -143,6 +143,18 @@ button{font:inherit;color:inherit}
 #tutCard p{margin:0 0 6px;color:var(--fg);line-height:1.55}
 #tutCard ul{margin:0 0 6px;padding-left:18px;line-height:1.6}
 #tutCard .btns{margin-top:10px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#tutHud{left:12px;top:12px;width:min(340px,34%);pointer-events:auto;z-index:6;background:rgba(14,18,13,.92);border:1px solid var(--accent);padding:10px 12px;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+#tutHud .tph{display:flex;justify-content:space-between;align-items:center;gap:6px;font:700 11px var(--f-mono);color:var(--accent);letter-spacing:.06em}
+#tutHud .tpa{display:flex;gap:4px}
+#tutHud h4{margin:6px 0 4px;font-size:16px}
+#tutHud p{margin:0;font-size:13px;line-height:1.55;color:var(--fg)}
+#tutHud kbd{font:700 11px var(--f-mono);background:var(--accent);color:#10130f;padding:1px 5px;margin:0 2px}
+#tutHud .tpb{height:6px;margin-top:8px;background:#0d100c;border:1px solid var(--line)}
+#tutHud .tpb i{display:block;height:100%;width:0;background:var(--accent)}
+body:not(.tm) #tutHud.low{left:50%;top:auto;bottom:12px;transform:translateX(-50%);width:clamp(240px,calc(100vw - 840px),440px)}
+body.tm #tutHud{left:50%;top:auto;bottom:10px;transform:translateX(-50%);width:min(42%,360px);padding:7px 10px}
+body.tm #tutHud p{font-size:12px;line-height:1.45}
+body.tm #tutHud h4{font-size:14px;margin:4px 0 2px}
 .tutHL{outline:2px solid var(--accent)!important;outline-offset:4px;box-shadow:0 0 0 6px rgba(232,163,58,.18)!important;position:relative;z-index:2}
 .btn.primary:hover{filter:brightness(1.1)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -373,6 +385,7 @@ body.tm .eq{padding:10px}
     <div id="prompt" class="prompt" hidden></div>
     <div id="exWrap" class="exwrap" hidden><span id="exTxt">탈출 중</span><div><i id="exFill"></i></div></div>
     <div id="toasts"></div>
+    <div id="tutHud" hidden></div>
   </div>
 
   <div id="rstDlg" class="screen" hidden><div class="center"><div class="sheet">
@@ -380,8 +393,8 @@ body.tm .eq{padding:10px}
     <div class="btns"><button class="btn" id="rstNo" type="button">취소</button><button class="btn rstb" id="rstYes" type="button"></button></div>
   </div></div></div>
   <div id="tutAsk" class="screen" hidden><div class="center"><div class="sheet">
-    <h2>처음 오셨나요?</h2><p class="why">지금은 처음 시작한 기본 세팅입니다. 출격 준비부터 탈출까지 1분이면 끝나는 간단한 튜토리얼을 볼까요?<br><small style="color:var(--mute)">나중에 메인 화면의 📖 튜토리얼 버튼으로 다시 볼 수 있습니다.</small></p>
-    <div class="btns"><button class="btn" id="tutSkip" type="button">건너뛰기</button><button class="btn primary" id="tutGo" type="button">튜토리얼 보기</button></div>
+    <h2>처음 오셨나요?</h2><p class="why">작은 <b>연습 맵</b>에서 이동 · 사격 · 상자 수색 · 치료 · 탈출을 직접 해 볼 수 있습니다 (약 3~4분). 장비와 돈은 소모되지 않습니다.<br><small style="color:var(--mute)">나중에 메인 화면의 🎯 연습 맵 · 📖 튜토리얼 버튼으로 다시 할 수 있습니다.</small></p>
+    <div class="btns"><button class="btn" id="tutSkip" type="button">건너뛰기</button><button class="btn" id="tutGo" type="button">메뉴 설명만 보기</button><button class="btn primary" id="tutMapGo" type="button">연습 맵에서 해보기</button></div>
   </div></div></div>
   <div id="tutCard" hidden></div>
   <div id="tui" hidden></div>
@@ -414,6 +427,7 @@ body.tm .eq{padding:10px}
         <div class="stats" id="stats"></div>
         <button type="button" class="btn primary quick-start" id="quickStart">&#xBC14;&#xB85C; &#xCD9C;&#xACA9;</button>
         <button type="button" class="btn" id="setBtn">⚙ 설정</button>
+        <button type="button" class="btn" id="tutMapBtn">🎯 연습 맵</button>
         <button type="button" class="btn" id="tutBtn">📖 튜토리얼</button>
         <button type="button" class="btn rstb" id="rstBtn">&#x26A0; &#xAC8C;&#xC784; &#xCD08;&#xAE30;&#xD654; &#xB370;&#xC774;&#xD130; &#xC804;&#xCCB4; &#xC0AD;&#xC81C;</button>
       </header>
@@ -4152,7 +4166,7 @@ function resolveHit(dmg,cls,zone,helmet,armor,fx,bonus){
 function addFloater(x,y,txt,col){floaters.push({x:x,y:y,t:0,txt:txt,col:col})}
 function spark(x,y,col,n){for(var i=0;i<n;i++){var a=rnd(0,TAU),s=rnd(60,240);parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,life:rnd(.12,.3),col:col})}}
 function alertScavs(x,y,rad){
-  for(var i=0;i<scavs.length;i++){var s=scavs[i];if(s.dead||s.state==='combat')continue;
+  for(var i=0;i<scavs.length;i++){var s=scavs[i];if(s.dead||s.dummy||s.state==='combat')continue;
     if(sameFl(s.x,x)&&dist(s.x,s.y,x,y)<rad){s.state='search';s.target={x:x+rnd(-80,80),y:y+rnd(-80,80)};s.searchT=0;s.alertT=0}}
 }
 function startReload(){
@@ -4213,7 +4227,7 @@ var HEAD_R=4.5,HEAD_OFF=1; /* 머리 판정 반경(몸통 반경 14). 그려지�
 /* 탄 궤적이 머리 원(그려진 머리와 같은 크기)을 지나가면 헤드. 몸통 원의 가장자리 충돌점으로는 머리에 닿을 수 없어서 궤적 기준으로 판정 */
 function hitZoneRay(e,sx,sy,ux,uy,tBody){
   var hx=e.x+Math.cos(e.ang)*HEAD_OFF,hy=e.y+Math.sin(e.ang)*HEAD_OFF;
-  return rayCircle(sx,sy,ux,uy,hx,hy,HEAD_R,tBody+e.r*2)<Infinity?'head':'body';
+  return rayCircle(sx,sy,ux,uy,hx,hy,e.dummy?7:HEAD_R,tBody+e.r*2)<Infinity?'head':'body';
 }
 function hitZone(e,hx,hy){
   if(hx==null)return 'body';
@@ -4223,6 +4237,7 @@ var STUN_T=5,STUN_IMM=2;
 var BURN_T=5,BURN_TICK=7; /* 스캐브 화상: 0.5초마다 BURN_TICK 피해 × BURN_T 초 (기존 3 × 3.5초 → 초당 14 / 총 70) */
 function hitScav(s,dmg,cls,zoneForce,src,hx,hy,rear,fx,suppressed){
   var zone=zoneForce||hitZone(s,hx,hy);
+  if(s.dummy&&TP){if(src==='knife')TP.c.kh++;else{TP.c.hits++;if(zone==='head')TP.c.head++}}
   var r=resolveHit(dmg,cls,zone,s.helmet,s.armor,fx);
   s.hp-=r.d;s.hpShow=2.5;
   var lbl=(zone==='head'?'머리 ':'')+(r.had?(r.pen?'관통 ':'방어 '):'')+'-'+Math.round(r.d);
@@ -4245,6 +4260,7 @@ function hurtPlayer(dmg,cls,fromAng,melee,hx,hy,fx,zf){
   var g=zone==='head'?P.eq.helmet:P.eq.armor;
   if(g&&g.dur<=0&&!g.warned){g.warned=true;toast((zone==='head'?'헬멧':'방탄복')+' 파손','#e0533f')}
   if(fx==='inc'&&P.hp>0){if(!(P.burn>0))toast('화상! 치료로 진화','#e8a33a');P.burn=3.5;P.burnT=0}
+  if(R.tut&&P.hp<20){P.hp=20}
   if(P.hp<=0){P.hp=0;endRaid('dead')}
 }
 function medCount(id){var n=P.pouch?(P.pouch[id]||0):0;P.inv.forEach(function(s){if(s.k==='med'&&s.id===id)n+=s.n});return n}
@@ -4367,6 +4383,7 @@ function updScav(s,dt){
   if(s.dead)return;
   if(s.frostT>0){s.frostT-=dt;dt*=.4}
   if(s.cage&&s.cage.locked){s.spd=0;s.aimT=0;s.exposed=false;s.state='patrol';if(s.hpShow>0)s.hpShow-=dt;return}
+  if(s.dummy){s.spd=0;s.aimT=0;s.exposed=false;if(s.hpShow>0)s.hpShow-=dt;if(s.flash>0)s.flash-=dt;return}
   s.noise=s.spd>110?300:s.spd>40?150:40;
   if(s.burn>0){s.burn-=dt;s.burnT=(s.burnT||0)+dt;if(s.burnT>=.5){s.burnT=0;s.hp-=BURN_TICK;s.hpShow=2;addFloater(s.x,s.y-18,'-'+BURN_TICK,'#ff8a3a');if(s.hp<=0){killScav(s);return}}}
   var T=P;if(R.allies){var at=null,bd=1e9;for(var ai=0;ai<R.allies.length;ai++){var al=R.allies[ai];if(al.dead||al.down)continue;var ad=dist(s.x,s.y,al.x,al.y);if(ad<s.vis&&ad<bd&&los(s.x,s.y,al.x,al.y)&&angDiff(Math.atan2(al.y-s.y,al.x-s.x),s.ang)<s.fov/2+.4){at=al;bd=ad}}if(at&&(P.downed||!los(s.x,s.y,P.x,P.y)||bd<dist(s.x,s.y,P.x,P.y)*.85))T=at}if(cdrones.length){var cb=null,cbd=1e9,dpl=dist(s.x,s.y,P.x,P.y),plSee=los(s.x,s.y,P.x,P.y);for(var ci=0;ci<cdrones.length;ci++){var cdr=cdrones[ci];if(cdr.hp<=0)continue;var cdd=dist(s.x,s.y,cdr.x,cdr.y);if(cdd<s.vis*.9&&cdd<cbd&&los(s.x,s.y,cdr.x,cdr.y)&&angDiff(Math.atan2(cdr.y-s.y,cdr.x-s.x),s.ang)<s.fov/2+.4){cb=cdr;cbd=cdd}}if(cb&&(!plSee||cbd<dpl*.85||T!==P))T=cb}T=prisonFoe(s,dt,T);var dx=T.x-s.x,dy=T.y-s.y,d=Math.hypot(dx,dy),wd=WEAP[s.w.id];
@@ -4422,7 +4439,7 @@ function updScav(s,dt){
       if(R.alarm.t>0){var ax2=R.alarm.x+rnd(-140,140),ay2=R.alarm.y+rnd(-140,140);s.target=pointFree(ax2,ay2,14)?{x:ax2,y:ay2}:{x:R.alarm.x,y:R.alarm.y};s.searchT=0;s.alertT=0}
       else{pickWaypoint(s);s.react=0}
     }
-  }else{
+  }else if(s.tutHold){s.aimT=0;s.spd=0;s.ang+=Math.sin(performance.now()/900+s.x)*dt*.5}else{
     s.aimT=0;
     var tp=s.target,dp=Math.hypot(tp.x-s.x,tp.y-s.y);
     if(s.waiting>0){s.waiting-=dt;s.ang+=Math.sin(performance.now()/700+s.x)*dt*.8;s.spd=0}
@@ -4436,7 +4453,8 @@ function updScav(s,dt){
   }
 }
 function killScav(s,by){
-  s.dead=true;if(!by)P.kills++;
+  if(s.dummy){s.dead=true;s.rsT=3;s.hpShow=0;return}
+  s.dead=true;if(!by)P.kills++;if(s.tutFoe&&TP)TP.c.foeKill++;
   var items=[];
   if(s.helmet)items.push(gearItem('helmet',s.helmet));
   if(s.armor)items.push(gearItem('armor',s.armor));
@@ -4810,7 +4828,8 @@ function bankRaid(){
   list.sort(function(a,b){return itemRar(b)-itemRar(a)});
   return {list:list,sold:sold,soldN:soldN};
 }
-function endRaid(kind){if(state==='raid'&&(kind==='dead'||kind==='gas'||kind==='mine'||kind==='rad')&&tryAllyRescue(kind))return;
+function endRaid(kind){if(R&&R.tut&&state==='raid'){tutFinish(kind);return}
+  if(state==='raid'&&(kind==='dead'||kind==='gas'||kind==='mine'||kind==='rad')&&tryAllyRescue(kind))return;
   if(state!=='raid')return;
   state='result';closeLoot();$('inv').hidden=true;$('hud').hidden=true;
   var secs=Math.round(R.total-R.time),mm=Math.floor(secs/60),ss=secs%60;
@@ -4846,7 +4865,7 @@ function endRaid(kind){if(state==='raid'&&(kind==='dead'||kind==='gas'||kind==='
 function update(dt){
   if(paused)return;
   R.time-=dt;if(R.time<=0){R.time=0;endRaid('mia');return}
-  R.clock+=dt;updEnv(dt);updThrow(dt);
+  R.clock+=dt;updEnv(dt);updThrow(dt);if(R.tut)tutTick(dt);
   if(R.pickJobs)for(var pj=R.pickJobs.length-1;pj>=0;pj--){var job=R.pickJobs[pj];job.t-=dt;if(job.target)job.target.pickT=Math.max(0,job.t);if(job.t<=0){openLock(job.target||{cell:job.cell},'락픽 완료');R.pickJobs.splice(pj,1)}}
   var i;
   /* aim & camera */
@@ -5102,6 +5121,7 @@ function render(){
     ctx.strokeStyle=off?'#e0533f':'#79b665';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.lineDashOffset=-now*20;ctx.beginPath();ctx.arc(ex.x,ex.y,ex.r,0,TAU);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle=off?'#f0a090':'#b9e0a6';ctx.font='900 20px "Big Shoulders Display","Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText('탈출 '+ex.id+(off?' · 정전':''),ex.x,ex.y+7)}
   if(R.hosp)drawStairs(now,vx,vy,vw,vh);
+  if(R.tut)drawTutWorld(now);
   /* footprints (snow) */
   for(i=0;i<prints.length;i++){var fp=prints[i],fage=R.clock-fp.t;if(fage>fp.life)continue;
     if(fp.x<vx-20||fp.x>vx+vw+20||fp.y<vy-20||fp.y>vy+vh+20)continue;
@@ -5169,12 +5189,14 @@ function render(){
   for(i=0;i<bullets.length;i++){var b=bullets[i];if(b.src!=='p'&&!canSee(b.x,b.y))continue;var bl=Math.hypot(b.vx,b.vy);if(b.gl){ctx.fillStyle='#3d4a2e';ctx.strokeStyle='#e8c46a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(b.x,b.y,4.5,0,TAU);ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(200,200,190,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx/bl*16,b.y-b.vy/bl*16);ctx.stroke();continue}ctx.strokeStyle=b.src==='p'?'#ffe9a8':'#ff9c7a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx/bl*22,b.y-b.vy/bl*22);ctx.stroke()}
   /* scavs */
   for(i=0;i<scavs.length;i++){var s=scavs[i];if(s.dead)continue;if(s.x<vx-40||s.x>vx+vw+40||s.y<vy-40||s.y>vy+vh+40)continue;if(!canSee(s.x,s.y))continue;
-    var bodyCol=s.pris?'#c9772e':R.map.prison?(s.role==='riot'?'#26385f':(s.armor?'#4a6585':'#3f5873')):(s.armor?'#a5503f':'#8a4a3c');
+    var bodyCol=s.dummy?'#a8873a':s.pris?'#c9772e':R.map.prison?(s.role==='riot'?'#26385f':(s.armor?'#4a6585':'#3f5873')):(s.armor?'#a5503f':'#8a4a3c');
     drawHuman(s.x,s.y,s.ang,s.armor?mixCol(bodyCol,RC[s.armor.c]):bodyCol,s.helmet?RC[s.helmet.c]:'#c79a7a',s.melee?11:WEAP[s.w.id].len,s.flash,false);
     if(s.hpShow>0){var bw=34;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(s.x-bw/2,s.y-26,bw,5);ctx.fillStyle=s.hp/s.maxhp>.4?'#d9d6c3':'#e0533f';ctx.fillRect(s.x-bw/2+1,s.y-25,(bw-2)*clamp(s.hp/s.maxhp,0,1),3)}
     if(s.warden||s.boss){var wc=s.warden?'#4fd1c5':'#ff6a3a';ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,19,0,TAU);ctx.stroke();ctx.fillStyle=wc;ctx.font='700 11px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(s.warden?'소장':'두목',s.x,s.y-44)}
+    if(s.dummy||s.tutFoe){var dcol=s.dummy?'#e8a33a':'#e0533f';ctx.strokeStyle=dcol;ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,19,0,TAU);ctx.stroke();ctx.fillStyle=dcol;ctx.font='700 11px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(s.dummy?s.dlabel:'연습 적',s.x,s.y-44)}
     if(s.captain){ctx.strokeStyle='#4fd1c5';ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,19,0,TAU);ctx.stroke();ctx.fillStyle='#4fd1c5';ctx.font='700 11px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText('경비대장',s.x,s.y-44)}
     if(s.stunT>0){ctx.fillStyle='#e8a33a';ctx.font='900 13px sans-serif';ctx.textAlign='center';ctx.fillText('기절 '+s.stunT.toFixed(1),s.x,s.y-30)}
+    else if(s.dummy){}
     else if(s.state==='combat'){ctx.fillStyle='#e0533f';ctx.font='900 16px sans-serif';ctx.textAlign='center';ctx.fillText('!',s.x,s.y-30)}
     else if(s.state==='search'){ctx.fillStyle='#e8a33a';ctx.font='900 16px sans-serif';ctx.textAlign='center';ctx.fillText('?',s.x,s.y-30)}}
   /* player */
@@ -5219,6 +5241,7 @@ function render(){
   ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mouse.x,mouse.y,cr,0,TAU);ctx.stroke();
   ctx.beginPath();ctx.moveTo(mouse.x-4,mouse.y);ctx.lineTo(mouse.x+4,mouse.y);ctx.moveTo(mouse.x,mouse.y-4);ctx.lineTo(mouse.x,mouse.y+4);ctx.stroke();
   if(P.rel||P.heal){var pr=P.rel?P.rel.t/P.rel.dur:P.heal.t/P.heal.dur;ctx.strokeStyle=P.heal?'#79b665':'#e8a33a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(mouse.x,mouse.y,cr+8,-Math.PI/2,-Math.PI/2+TAU*clamp(pr,0,1));ctx.stroke()}
+  if(R.tut)drawTutGuide(now);
 }
 function drawGasRoom(z,now,vx,vy,vw,vh){
   if(z.x>vx+vw||z.x+z.w<vx||z.y>vy+vh||z.y+z.h<vy)return;
@@ -5245,7 +5268,7 @@ function buildMiniStatic(){
   floors.forEach(function(f){c.fillStyle='#434840';c.fillRect(f.x*k,f.y*k,f.w*k,f.h*k)});
   if(R.mineZ)R.mineZ.forEach(function(z){c.fillStyle='rgba(224,83,63,.22)';c.strokeStyle='rgba(232,163,58,.85)';c.lineWidth=1.2;c.beginPath();c.arc(z.x*k,z.y*k,z.r*k,0,TAU);c.fill();c.setLineDash([3,3]);c.stroke();c.setLineDash([])});
   gasZ.forEach(function(z){c.fillStyle='rgba(150,200,60,.4)';if(z.rect){c.fillRect(z.x*k,z.y*k,z.w*k,z.h*k);return}c.beginPath();c.arc(z.x*k,z.y*k,z.r*.92*k,0,TAU);c.fill()});
-  if(R.map.indoor||R.map.terrain||R.map.prison){c.fillStyle=R.map.shaft?'#14170f':R.map.terrain?'#1c1f1b':'#8a9285';solids.forEach(function(s){if(!s.kind)c.fillRect(s.x*k,s.y*k,Math.max(1.3,s.w*k),Math.max(1.3,s.h*k))})}
+  if(R.map.indoor||R.map.terrain||R.map.prison||R.tut){c.fillStyle=R.map.shaft?'#14170f':R.map.terrain?'#1c1f1b':'#8a9285';solids.forEach(function(s){if(!s.kind)c.fillRect(s.x*k,s.y*k,Math.max(1.3,s.w*k),Math.max(1.3,s.h*k))})}
   solids.forEach(function(s){if(s.kind&&s.vid!=='감방'){c.fillStyle=(s.kind==='water'||s.kind==='river')?'#1d3a52':'#5a5d52';c.fillRect(s.x*k,s.y*k,Math.max(1,s.w*k),Math.max(1,s.h*k))}});
   extracts.forEach(function(e){c.fillStyle='rgba(121,182,101,.4)';c.strokeStyle='#79b665';c.lineWidth=1.5;c.beginPath();c.arc(e.x*k,e.y*k,e.r*k+3,0,TAU);c.fill();c.stroke();c.fillStyle='#b9e0a6';c.font='700 9px monospace';c.textAlign='center';c.fillText(e.sid||e.id,e.x*k,e.y*k+3)});
   spawns.forEach(function(s,i){c.fillStyle=i===R.spIdx?'#4aa3e0':'#3a4a54';c.beginPath();c.arc(s.x*k,s.y*k,3,0,TAU);c.fill()});
@@ -5280,7 +5303,7 @@ function drawMini(){
 /* ============ HUD ============ */
 function updateHUD(){
   var t=Math.max(0,R.time),m=Math.floor(t/60),s=Math.floor(t%60);
-  setTxt('timer',(m<10?'0':'')+m+':'+(s<10?'0':'')+s);
+  setTxt('timer',R.tut?'연습':(m<10?'0':'')+m+':'+(s<10?'0':'')+s);
   var tm=$('timer');if(t<180&&!tm.classList.contains('low'))tm.classList.add('low');else if(t>=180&&tm.classList.contains('low'))tm.classList.remove('low');
   var nearest=null,nd=1e9;extracts.forEach(function(e){var d=dist(P.x,P.y,e.x,e.y);if(d<nd){nd=d;nearest=e}});
   var otx='가장 가까운 탈출 지점 '+nearest.id+' · '+Math.round(nd/12)+'m';
@@ -5293,7 +5316,7 @@ function updateHUD(){
   if(R.map.rad){otx+=' · [방사선 '+(R.rl*10).toFixed(1)+']';if(P.filtT>0)otx+=' · [정화 '+Math.ceil(P.filtT)+'초]';else if((P.rad||0)>.5)otx+=' · [피폭 '+Math.round(P.rad)+'%]'}
   if(R.hosp)otx+=' · ['+(P.x>HX2?'2층':'1층')+']';if(R.pickRoom)otx+=' · [락픽실 '+(R.pickRoom.open?'개방':'잠김')+']';
   if(drones.length)otx+=' · [치료 드론 '+drones.length+'기]';
-  setTxt('obj',otx);
+  setTxt('obj',R.tut?'연습 맵 · 탈출 지점 '+Math.round(nd/12)+'m':otx);
   var hpf=$('hpFill');hpf.style.width=(P.hp/P.maxhp*100)+'%';hpf.style.background=P.hp>60?'#79b665':P.hp>30?'#e8a33a':'#e0533f';
   setTxt('hpTxt',String(Math.ceil(P.hp)));
   $('staFill').style.width=P.sta+'%';
@@ -5942,7 +5965,7 @@ function renderSettings(){
   h+=setRow('rng','knife','내 근접 공격 범위','칼 공격이 닿는 부채꼴(반경 64)을 표시');
   h+=setRow('rng','foeM','적 근접 공격 범위','근접 전용·탄이 떨어진 적의 타격 반경(36)을 표시');
   h+=setRow('rng','noise','내 소음 반경','지금 내 행동(걷기·달리기·살금걸음)이 적에게 들리는 거리를 표시');
-  h+='<div class="setsec">도움말</div><div class="btns"><button class="btn" id="setTut" type="button">튜토리얼 다시 보기</button></div>';
+  h+='<div class="setsec">도움말</div><div class="btns"><button class="btn" id="setTut" type="button">튜토리얼 다시 보기</button><button class="btn" id="setTutMap" type="button">🎯 연습 맵 열기</button></div>';
   h+='<div class="btns" style="margin-top:14px"><button class="btn primary" id="setClose" type="button">닫기</button></div>';
   $('setBox').innerHTML=h;
 }
@@ -5952,6 +5975,7 @@ $('settings').addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t)return;
   if(t.id==='setClose'){closeSettings();return}
   if(t.id==='setTut'){closeSettings();if(state==='menu')tutStart();else toast('튜토리얼은 메인 화면에서 볼 수 있습니다');return}
+  if(t.id==='setTutMap'){closeSettings();if(state==='menu')startTutorialRaid();else toast('연습 맵은 메인 화면에서 열 수 있습니다');return}
   if(t.dataset.sg){var g=t.dataset.sg,k=t.dataset.sk;SET[g][k]=SET[g][k]?0:1;saveSet();renderSettings()}
 });
 $('settings').addEventListener('input',function(e){
@@ -6032,7 +6056,7 @@ function onKey(code){
 }
 function syncZoomUI(){var p=Math.round(ZM*100);$('zRange').value=p;$('zVal').textContent=p+'%'}
 function setZoom(v){ZM=clamp(Math.round(v*20)/20,.25,1.8);SC=BASE*ZM;SAVE.zoom=ZM;persist();syncZoomUI()}
-function setPause(v){paused=v;$('pause').hidden=!v;if(v)syncZoomUI();else{SAVE.zoom=ZM;persist();$('stage').focus()}}
+function setPause(v){paused=v;$('pause').hidden=!v;if(v){syncZoomUI();var tq=!!(R&&R.tut);$('pQuit').textContent=tq?'연습 나가기':'포기 (장비 전부 상실)';var pw=$('pause').querySelector('.why');if(pw)pw.textContent=tq?'Esc 로 돌아갑니다. 연습 맵은 장비·돈에 영향이 없습니다.':'Esc 로 돌아갑니다. 포기하면 가진 모든 것을 잃습니다.'}else{SAVE.zoom=ZM;persist();$('stage').focus()}}
 $('zOut').addEventListener('click',function(){setZoom(ZM-.05)});
 $('zIn').addEventListener('click',function(){setZoom(ZM+.05)});
 $('zReset').addEventListener('click',function(){setZoom(1)});
@@ -6142,6 +6166,7 @@ $('pQuit').addEventListener('click',function(){paused=false;$('pause').hidden=tr
 $('result').addEventListener('click',function(e){
   var id=e.target.id;
   if(id==='again'||id==='toStash'){HUB.tab='stash';HUB.confirm='';state='menu';$('result').hidden=true;$('menu').hidden=false;R=null;P=null;renderHub()}
+  else if(id==='tutAgain'||id==='tutCards'){HUB.tab='stash';HUB.confirm='';state='menu';$('result').hidden=true;$('menu').hidden=false;R=null;P=null;renderHub();if(id==='tutAgain')startTutorialRaid();else tutStart()}
 });
 window.addEventListener('resize',resize);window.addEventListener('orientationchange',function(){setTimeout(resize,200)});
 if(window.ResizeObserver)new ResizeObserver(resize).observe($('stage'));
@@ -6374,6 +6399,211 @@ function frame(ts){
   $('rstNo').addEventListener('click',function(){step=0;dlg.hidden=true});
   $('rstYes').addEventListener('click',function(){if(step===1)open(2);else if(step===2)wipe()});
 })();
+/* ============ v81: 인게임 튜토리얼 — 작은 연습 맵에서 직접 조작해 보기 ============ */
+var TMAP={id:'tut',name:'연습 맵',col:'#e8a33a',W:2600,H:1400,time:36000,sm:0,
+  g:'#25301f',pc:['#1d2618','#222c1c','#1a2215','#262f1f','#1f2819'],tf:'#33402b',mg:'#1a2118',fc:['#3a3d34','#35382f','#3d3f36'],
+  desc:'튜토리얼 연습 맵'};
+var TP=null;
+var TX={spawn:{x:240,y:700},line:{x:790,y:700},door:{x:1540,y:700},crateA:{x:1570,y:600},crateB:{x:1810,y:820},foe:{x:2250,y:600},ext:{x:2480,y:700}};
+function tk(pc,tc){return TI.on?tc:pc}
+function tutDummy(x,y,ang,label,hp){
+  var s=spawnScav(x,y,1);s.dummy=true;s.helmet=null;s.armor=null;s.ang=ang;s.hp=s.maxhp=hp||150;s.dlabel=label;s.noGun=true;s.rsT=0;
+  scavs.push(s);return s;
+}
+function tutBuildMap(){
+  solids=[];floors=[];blds=[];conts=[];wps=[];patches=[];tufts=[];decals=[];reserved=[];alarms=[];gasZ=[];extracts=[];
+  spawns=[{x:TX.spawn.x,y:TX.spawn.y}];R.spIdx=0;
+  extracts.push({x:TX.ext.x,y:TX.ext.y,r:80,id:'A',t:3});
+  var t=16,i;
+  function wall(x,y,w,h){solids.push({x:x,y:y,w:w,h:h})}
+  /* 사격장: 위·아래 벽 + 가운데 출구가 뚫린 뒷벽 */
+  wall(700,470,636,20);wall(700,930,636,20);wall(1316,470,20,182);wall(1316,748,20,202);
+  /* 보급 창고: 좌·우에 문(96px) */
+  var bx=1480,by=520,bw=420,bh=360;
+  wall(bx,by,bw,t);wall(bx,by+bh-t,bw,t);
+  wall(bx,by,t,652-by);wall(bx,748,t,by+bh-748);
+  wall(bx+bw-t,by,t,652-by);wall(bx+bw-t,748,t,by+bh-748);
+  var b={x:bx,y:by,w:bw,h:bh,t:t,doors:[],vault:0,col:'#3a3d34'};floors.push(b);blds.push(b);
+  solids.push({x:bx+130,y:by+56,w:96,h:34,kind:'desk'},{x:bx+250,y:by+230,w:46,h:46,kind:'crate'});
+  /* 연습 적 구역 엄폐물 */
+  solids.push({x:2080,y:610,w:50,h:50,kind:'crate'},{x:2140,y:770,w:26,h:110,kind:'barrier'},{x:2300,y:470,w:96,h:46,kind:'car'},{x:2330,y:790,w:110,h:26,kind:'barrier'});
+  /* 상자 */
+  var ca={x:TX.crateA.x,y:TX.crateA.y,w:32,h:22,tier:2,name:'군용 보급 상자',items:[gearItem('helmet',mkGear('helmet',2)),{k:'ammo',cal:'c556',c:3,n:40},{k:'med',id:'ifak',n:1}],opened:false,ph:0};
+  var cb={x:TX.crateB.x,y:TX.crateB.y,w:32,h:22,tier:1,name:'서랍장',items:[{k:'val',name:VALS[2][1],r:2,v:VAL_PRICE[2],n:1},{k:'med',id:'bandage',n:2}],opened:false,ph:2};
+  conts.push(ca,cb);
+  TP.cA=ca;TP.cB=cb;TP.crPrev=tutCrSum();
+  for(i=0;i<150;i++)patches.push({x:rnd(0,W),y:rnd(0,H),rx:rnd(60,200),ry:rnd(40,140),c:pick(TMAP.pc)});
+  for(i=0;i<420;i++)tufts.push([rnd(0,W),rnd(0,H),rnd(0,1)]);
+  [[2000,700],[2250,620],[2200,900],[2450,560]].forEach(function(p){wps.push({x:p[0],y:p[1]})});
+  R.comps=[{x:420,y:610,n:'연습장'},{x:1018,y:452,n:'사격장'},{x:1690,y:502,n:'보급 창고'},{x:2250,y:440,n:'연습 적'}];
+}
+function tutCrSum(){var n=0;[TP.cA,TP.cB].forEach(function(c){if(c)c.items.forEach(function(it){n+=(it.n||1)})});return n}
+function tutNewPlayer(sp){
+  var p={x:sp.x,y:sp.y,r:13,ang:0,hp:100,maxhp:100,guard:0,guardRed:0,upA:0,upAT:0,upH:0,upHT:0,eq:{helmet:null,armor:null,pack:null,rig:null},
+    inv:[],w:[null,null,null],cur:0,fireT:0,recoil:0,sta:100,exhaust:false,rel:null,heal:null,exT:0,noise:40,spd:0,hurt:0,hitT:0,hitDir:0,kills:0,sneak:false,sprint:false,knifeAnim:0,flash:0,hpShow:0};
+  p.w[0]=newW('ar',3);p.w[2]=newW('glock',2);
+  p.ga={c556:{c:3,n:90},c9:{c:2,n:51}};
+  p.pouch={};p.kitRem={};MEDNAMES.forEach(function(m){p.pouch[m]=0});p.pouch.bandage=3;
+  return p;
+}
+var TPS=[
+ {id:'move',t:'이동',ev:'dist',n:300,
+  b:function(){return tk('<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 로 걸어 다녀 보세요. 오른쪽 위 <b>미니맵</b>에서 내 위치(주황 화살표)를 볼 수 있습니다.','왼쪽 <b>이동 조이스틱</b>으로 걸어 다녀 보세요. 오른쪽 위 미니맵에 내 위치(주황 화살표)가 보입니다.')}},
+ {id:'sprint',t:'달리기',ev:'sprintT',n:1.2,
+  b:function(){return tk('이동하면서 <kbd>Shift</kbd> 를 누르고 있으면 달립니다.','이동 조이스틱을 <b>끝까지</b> 밀면 달립니다.')+' 스태미너(체력 바 아래 파란 줄)가 줄고, <b>소음이 커져</b> 멀리 있는 스캐브에게도 들립니다.'}},
+ {id:'sneak',t:'살금걸음',ev:'sneakT',n:1.2,
+  b:function(){return tk('<kbd>C</kbd> 로 살금걸음을 켜고(다시 누르면 꺼짐) 걸어 보세요.','<b>살금</b> 버튼으로 켜고(다시 누르면 꺼짐) 걸어 보세요.')+' 느리지만 소리가 작아 스캐브 뒤로 접근할 때 꼭 필요합니다.'}},
+ {id:'range',t:'사격장으로',reach:true,
+  b:function(){return '주황색 <b>화살표</b>를 따라 사격장의 <b>사격선</b>(점선)까지 가세요.'},
+  target:function(){return {x:TX.line.x-10,y:TX.line.y,r:60}}},
+ {id:'shoot',t:'사격',ev:'hits',n:3,
+  b:function(){return tk('<b>마우스</b>로 조준(십자선)하고 <b>좌클릭</b>으로 쏩니다. 노란 <b>표적</b>을 3번 맞혀 보세요.','오른쪽 <b>조준 조이스틱</b>을 밀어 조준하고, 많이 당기면 발사됩니다. 표적을 3번 맞혀 보세요.')+' 총소리는 주변 스캐브에게 들립니다.'},
+  target:function(){return tutNearDummy(false)}},
+ {id:'head',t:'헤드샷',ev:'head',n:1,
+  b:function(){return '머리를 맞히면 피해가 <b>2배</b>입니다 (헬멧이 있으면 막힐 수 있음). 가까운 표적을 노리고, 멈춰서 '+tk('<kbd>C</kbd> 살금걸음','살금걸음')+'으로 쏘면 탄이 덜 퍼집니다. 머리 맞히기 1회.'},
+  target:function(){return tutNearDummy(false)}},
+ {id:'reload',t:'재장전',ev:'rel',n:1,
+  b:function(){return tk('<kbd>R</kbd> 로 재장전합니다.','<b>R</b> 버튼으로 재장전합니다.')+' 탄창이 비면 자동으로 시작되지만, 교전 사이 틈에 미리 해 두는 게 안전합니다. 재장전 중에는 쏠 수 없습니다.'}},
+ {id:'swap',t:'무기 교체',
+  b:function(){return tk('<kbd>1</kbd> 주무기 · <kbd>2</kbd> 주무기2 · <kbd>3</kbd> 보조무기 · <kbd>4</kbd> 칼. 지금 <b>3번</b>을 눌러 보조무기(권총)를 꺼내 보세요.','화면 왼쪽의 무기 칸에서 <b>3번</b>을 눌러 보조무기(권총)를 꺼내 보세요.')},
+  enter:function(){if(P.cur===2)selectSlot(0)},ok:function(){return P.cur===2}},
+ {id:'knife',t:'칼 공격',ev:'kh',n:1,
+  b:function(){return tk('<b>우클릭</b> 또는 <kbd>V</kbd> 로 칼을 휘두릅니다 (사거리 짧음).','<b>V</b> 버튼으로 칼을 휘두릅니다 (사거리 짧음).')+' 사격선 옆 <b>근접 표적</b>은 등을 돌리고 있습니다. 살금살금 <b>뒤로 다가가</b> 베면 피해 2.4배 + 5초 기절!'},
+  target:function(){return tutKnifeDummy()}},
+ {id:'door',t:'보급 창고로',reach:true,
+  b:function(){return '사격장 뒷벽 가운데 출구를 지나 <b>보급 창고</b> 입구로 가세요. 벽에 막혀 있으면 총알도, 시야도 막힙니다.'},
+  target:function(){return {x:TX.door.x,y:TX.door.y,r:70}}},
+ {id:'search',t:'상자 수색',ev:'open',n:1,
+  b:function(){return '상자에 가까이 가면 <kbd>E</kbd> 안내가 뜹니다. '+tk('<kbd>E</kbd> 를 눌러','<b>E</b> 버튼으로')+' <b>군용 보급 상자</b>를 열어 보세요. 다시 누르면 닫힙니다.'},
+  target:function(){return {x:TX.crateA.x,y:TX.crateA.y,r:34}}},
+ {id:'take',t:'물건 챙기기',ev:'took',n:1,
+  b:function(){return tk('물건 칸을 <b>클릭</b>하면 가방으로 들어옵니다. <kbd>F</kbd> 는 가장 비싼 물건 자동 획득, <b>모두 가져가기</b> 버튼도 있습니다.','물건 칸을 <b>탭</b>하면 가방으로 들어옵니다. <b>F</b> 는 가장 비싼 물건 자동 획득입니다.')+' 가방 칸은 한정되어 있고, 죽으면 전부 잃습니다.'}},
+ {id:'equip',t:'장비 착용',
+  b:function(){return tk('<kbd>Tab</kbd> 으로 가방을 열고,','🎒 버튼으로 가방을 열고,')+' <b>방탄 헬멧</b>을 클릭해 착용해 보세요 (상자에서 헬멧을 못 챙겼다면 다시 가져오세요). 방탄 등급이 높을수록 총알을 잘 막습니다.'},
+  ok:function(){return !!P.eq.helmet}},
+ {id:'heal',t:'치료',ev:'heal',n:1,
+  enter:function(){P.hp=Math.min(P.hp,45);toast('총상을 입었습니다! 체력 '+Math.ceil(P.hp),'#e0533f')},
+  b:function(){return tk('<kbd>H</kbd> 를 눌러','<b>H</b> 버튼으로')+' 치료 아이템(붕대)을 사용하세요. 치료 중에는 느려지고 쏠 수 없으니 <b>엄폐물 뒤</b>에서 쓰는 게 좋습니다. 가방의 치료 아이템을 클릭해도 됩니다.'}},
+ {id:'foe',t:'스캐브 처치',ev:'foeKill',n:1,
+  b:function(){return '오른쪽 <b>연습 적</b> 구역에 스캐브 1명이 서 있습니다 (연습용이라 약하고, 체력이 20 밑으로는 안 떨어집니다). 스캐브는 <b>정면 부채꼴 안에서만</b> 나를 보고, 등 뒤의 소리는 못 듣습니다. 뒤로 돌아 베거나, 엄폐물 뒤에서 쏴 보세요.'},
+  target:function(){var f=tutFoe();return f?{x:f.x,y:f.y,r:30}:null}},
+ {id:'corpse',t:'시체 수색',ev:'corpse',n:1,
+  b:function(){return '쓰러뜨린 스캐브는 <b>시체</b>가 되어 장비와 탄약을 남깁니다. 가까이 가서 '+tk('<kbd>E</kbd>','<b>E</b> 버튼')+'로 수색해 보세요.'},
+  target:function(){var c=tutCorpse();return c?{x:c.x,y:c.y,r:30}:null}},
+ {id:'extract',t:'탈출',last:true,
+  b:function(){return '오른쪽 끝 <b>탈출 지점</b>(초록 원)에 들어가 <b>3초</b>간 버티면 탈출합니다. 실전에서는 6초이며, 탈출해야만 전리품이 보관함으로 들어옵니다.'},
+  target:function(){return {x:TX.ext.x,y:TX.ext.y,r:80}}}
+];
+function tutNearDummy(knife){var b=null,bd=1e9;scavs.forEach(function(s){if(!s.dummy||s.dead||!!s.knifeD!==!!knife)return;var d=dist(s.x,s.y,P.x,P.y);if(d<bd){bd=d;b=s}});return b?{x:b.x,y:b.y,r:26}:null}
+function tutKnifeDummy(){var s=scavs.filter(function(q){return q.dummy&&q.knifeD&&!q.dead})[0];return s?{x:s.x,y:s.y,r:26}:null}
+function tutFoe(){return scavs.filter(function(q){return q.tutFoe&&!q.dead})[0]||null}
+function tutCorpse(){var f=scavs.filter(function(q){return q.tutFoe&&q.dead})[0];if(!f)return null;return conts.filter(function(c){return c.corpse&&dist(c.x,c.y,f.x,f.y)<4})[0]||null}
+function tutRender(){
+  var el=$('tutHud'),st=TPS[TP.i];if(!el||!st)return;
+  el.innerHTML='<div class="tph"><span>연습 '+(TP.i+1)+' / '+TPS.length+'</span><span class="tpa">'+(st.last?'':'<button type="button" class="btn sm" data-tp="skip">건너뛰기</button>')+'<button type="button" class="btn sm" data-tp="exit">나가기</button></span></div><h4>'+st.t+'</h4><p>'+st.b()+'</p>'+(st.ev?'<div class="tpb"><i id="tpBar"></i></div>':'');
+  el.hidden=false;TP.barW=-1;
+}
+function tutNext(skipped){
+  if(!TP)return;var st=TPS[TP.i];
+  if(!skipped&&st){toast('✔ '+st.t+' 완료','#79b665');sfxTick(760,.09,.07,'triangle');setTimeout(function(){sfxTick(1020,.1,.06,'triangle')},90)}
+  if(TP.i<TPS.length-1)TP.i++;
+  TP.b=Object.assign({},TP.c);TP.entered=false;tutRender();
+}
+function tutTick(dt){
+  if(!TP||!R||!R.tut||!P)return;
+  var c=TP.c,i,s;
+  var mv=Math.hypot(P.x-TP.lx,P.y-TP.ly);TP.lx=P.x;TP.ly=P.y;if(mv<60)c.dist+=mv;
+  if(P.sprint&&P.spd>0)c.sprintT+=dt;
+  if(P.sneak&&P.spd>0)c.sneakT+=dt;
+  var rn=!!P.rel;if(rn&&!TP.relPrev)c.rel++;TP.relPrev=rn;
+  if(P.heal)TP.healPrev=true;else if(TP.healPrev){TP.healPrev=false;c.heal++}
+  var lc=lootC;if(lc&&lc!==TP.lcPrev){c.open++;if(lc.corpse)c.corpse++}TP.lcPrev=lc;
+  var cs=tutCrSum();if(cs<TP.crPrev)c.took++;TP.crPrev=cs;
+  /* 표적은 쓰러져도 3초 뒤 일어선다 */
+  for(i=0;i<scavs.length;i++){s=scavs[i];if(s.dummy&&s.dead){s.rsT-=dt;if(s.rsT<=0){s.dead=false;s.hp=s.maxhp;s.hpShow=0}}}
+  /* 연습 중에는 탄이 떨어지지 않는다 */
+  [['c556',90],['c9',51]].forEach(function(q){var g=P.ga[q[0]];if(g&&g.n<30)g.n=q[1]});
+  var lowP=!!lootC||!$('inv').hidden;if(lowP!==TP.low){TP.low=lowP;$('tutHud').classList.toggle('low',lowP)}
+  var st=TPS[TP.i];if(!st)return;
+  if(!TP.entered){TP.entered=true;TP.b=Object.assign({},c);if(st.enter)st.enter();tutRender()}
+  var done=false;
+  if(st.ev){var pr=clamp((c[st.ev]-TP.b[st.ev])/st.n,0,1);if(Math.abs(pr-TP.barW)>.01){TP.barW=pr;var bar=$('tpBar');if(bar)bar.style.width=(pr*100)+'%'}if(pr>=1)done=true}
+  if(st.reach){var tg=st.target();if(tg&&dist(P.x,P.y,tg.x,tg.y)<(tg.r||60))done=true}
+  if(st.ok&&st.ok())done=true;
+  if(done&&!st.last)tutNext(false);
+}
+function drawTutWorld(now){
+  var L=TX.line;
+  ctx.save();ctx.strokeStyle='rgba(232,163,58,.55)';ctx.lineWidth=4;ctx.setLineDash([18,12]);
+  ctx.beginPath();ctx.moveTo(L.x,492);ctx.lineTo(L.x,928);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(232,163,58,.85)';ctx.font='700 13px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText('사격선',L.x,514);
+  ctx.restore();
+}
+function drawTutGuide(now){
+  if(!TP)return;var st=TPS[TP.i];if(!st||!st.target)return;var tg=st.target();if(!tg)return;
+  var sx=CW/2+(tg.x-cam.x)*SC,sy=CH/2+(tg.y-cam.y)*SC,m=46,pul=.5+.5*Math.sin(now*4);
+  ctx.save();ctx.lineWidth=3;
+  if(sx>m&&sx<CW-m&&sy>m&&sy<CH-m){
+    var rr=(tg.r||40)*SC*.6+12+pul*6;
+    ctx.strokeStyle='rgba(232,163,58,'+(.55+.4*pul)+')';ctx.beginPath();ctx.arc(sx,sy,rr,0,TAU);ctx.stroke();
+    ctx.fillStyle='#e8a33a';ctx.beginPath();ctx.moveTo(sx,sy-rr-4);ctx.lineTo(sx-8,sy-rr-18);ctx.lineTo(sx+8,sy-rr-18);ctx.closePath();ctx.fill();
+  }else{
+    var cx=CW/2,cy=CH/2,dx=sx-cx,dy=sy-cy,k=Math.min((CW/2-m)/Math.abs(dx||1e-6),(CH/2-m)/Math.abs(dy||1e-6)),ex=cx+dx*k,ey=cy+dy*k,a=Math.atan2(dy,dx);
+    ctx.translate(ex,ey);ctx.rotate(a);
+    ctx.fillStyle='rgba(232,163,58,'+(.7+.3*pul)+')';ctx.strokeStyle='rgba(0,0,0,.6)';
+    ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-10,-12);ctx.lineTo(-4,0);ctx.lineTo(-10,12);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.rotate(-a);ctx.fillStyle='#e8a33a';ctx.font='700 12px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(Math.round(dist(P.x,P.y,tg.x,tg.y)/12)+'m',0,-20);
+  }
+  ctx.restore();
+}
+function startTutorialRaid(){
+  if(state!=='menu')return;
+  if(tutI>=0){tutI=-1;tutClear();$('tutCard').hidden=true}
+  if($('tutAsk'))$('tutAsk').hidden=true;
+  SAVE.tut=1;persist();
+  var mp=TMAP;W=mp.W;H=mp.H;MF=Math.hypot(W,H)/Math.hypot(3600,2800);
+  mmc.width=240;mmc.style.width=mmc.width+'px';mmc.height=Math.round(mmc.width*H/W);
+  R={time:mp.time,total:mp.time,start:performance.now(),spIdx:0,near:null,visPoly:[],cand:[],mode:MODES.n,map:mp,clock:0,alarm:{t:0,x:0,y:0,cd:0},bliz:{on:false,next:1e9,end:0,k:0},bz:1,bk:1,capKeys:[],safeKeys:[],mines:[],mineZ:[],radZ:[],rl:0,mdef:0,pt:0,myAmmo:[],tut:true};
+  sneakOn=false;NAV=null;
+  TP={i:0,entered:false,barW:-1,lx:TX.spawn.x,ly:TX.spawn.y,relPrev:false,healPrev:false,lcPrev:null,crPrev:0,cA:null,cB:null,
+    c:{dist:0,sprintT:0,sneakT:0,hits:0,head:0,rel:0,kh:0,open:0,corpse:0,took:0,heal:0,foeKill:0}};
+  TP.b=Object.assign({},TP.c);
+  bullets=[];parts=[];floaters=[];ghosts=[];blasts=[];scavs=[];thrown=[];thrZ=[];covW=[];drones=[];scouts=[];cdrones=[];clusQ=[];thrCdT=0;lootC=null;txtCache={};prints=[];VIS_R=VIS_BASE;
+  tutBuildMap();
+  P=tutNewPlayer(spawns[0]);
+  tutDummy(1000,640,Math.PI,'근거리 표적',150);
+  tutDummy(1130,830,Math.PI,'표적',150);
+  tutDummy(1250,590,Math.PI,'원거리 표적',150);
+  var kd=tutDummy(880,820,0,'근접 표적',400);kd.knifeD=true;
+  var f=spawnScav(TX.foe.x,TX.foe.y,1);f.tutFoe=true;f.tutHold=true;f.ang=0;f.helmet=null;f.armor=null;f.w=newW('makarov',1);f.ac=1;f.ammo=40;f.hp=f.maxhp=120;f.reactT=.9;f.aimNeed=.8;
+  scavs.push(f);
+  R.startVal=0;
+  buildMiniStatic();
+  cam.x=P.x;cam.y=P.y;
+  state='raid';paused=false;if(TI.on)tuiEnter();
+  ['menu','result','pause'].forEach(function(id){$(id).hidden=true});
+  $('hud').hidden=false;$('loot').hidden=true;$('inv').hidden=true;
+  $('toasts').innerHTML='';
+  resize();$('stage').focus();
+  toast('연습 맵입니다 · 장비와 돈은 소모되지 않고, 여기서 얻은 물건도 보관함에 들어가지 않습니다','#e8a33a');
+  tutRender();
+}
+function tutFinish(kind){
+  var ok=kind==='extract';
+  state='result';closeLoot();$('inv').hidden=true;$('hud').hidden=true;$('tutHud').hidden=true;
+  SAVE.tut=1;if(ok)SAVE.tutDone=1;persist();
+  TP=null;
+  $('resBox').innerHTML=ok?
+    '<h2 class="ok">튜토리얼 완료</h2><p class="why">이동 · 사격 · 재장전 · 상자 수색 · 장비 착용 · 치료 · 스캐브 처치 · 탈출까지 모두 해 봤습니다. 연습 맵에서 얻은 물건은 보관함에 들어가지 않습니다. 이제 메인 화면에서 맵과 작전 모드를 고르고 실전에 출격해 보세요.</p><div class="btns"><button class="btn" id="tutCards" type="button">메뉴 화면 설명 보기</button><button class="btn" id="tutAgain" type="button">연습 맵 다시 하기</button><button class="btn primary" id="again" type="button">보관함으로</button></div>':
+    '<h2>연습 종료</h2><p class="why">연습을 중단했습니다. 장비와 돈은 그대로입니다. 메인 화면의 🎯 연습 맵 버튼으로 언제든 다시 할 수 있습니다.</p><div class="btns"><button class="btn" id="tutAgain" type="button">처음부터 다시</button><button class="btn primary" id="again" type="button">보관함으로</button></div>';
+  $('result').hidden=false;
+}
+$('tutHud').addEventListener('click',function(e){
+  var b=e.target.closest('[data-tp]');if(!b||!TP)return;
+  if(b.dataset.tp==='skip')tutNext(true);
+  else if(b.dataset.tp==='exit'){paused=false;$('pause').hidden=true;endRaid('quit')}
+});
+
 /* v79: 기본 세팅(출격 기록 없음)으로 처음 시작하면 튜토리얼을 볼지 묻는다 */
 var TUT=[
   {tab:'stash',sel:'.maps',t:'맵과 작전 모드',b:'<p>먼저 <b>맵</b>을 고르고, 아래에서 <b>작전 모드</b>를 고릅니다.</p><ul><li>정규 모드는 적이 약하고 전리품도 평범합니다</li><li>위 모드일수록 적과 전리품이 강해지지만 최소 장비 가치가 필요합니다</li></ul>'},
@@ -6390,24 +6620,27 @@ function tutShow(){
   var st=TUT[tutI];HUB.tab=st.tab;HUB.confirm='';renderHub();tutClear();
   var el=document.querySelector(st.sel);if(el){el.classList.add('tutHL');try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){el.scrollIntoView()}}
   var last=tutI===TUT.length-1;
-  $('tutCard').innerHTML='<div class="st">튜토리얼 '+(tutI+1)+' / '+TUT.length+'</div><h3>'+st.t+'</h3>'+st.b+'<div class="btns"><button class="btn sm" type="button" data-tut="end">그만 보기</button>'+(tutI>0?'<button class="btn sm" type="button" data-tut="prev">이전</button>':'')+'<button class="btn sm primary" type="button" data-tut="'+(last?'done':'next')+'">'+(last?'시작하기':'다음')+'</button></div>';
+  $('tutCard').innerHTML='<div class="st">튜토리얼 '+(tutI+1)+' / '+TUT.length+'</div><h3>'+st.t+'</h3>'+st.b+'<div class="btns"><button class="btn sm" type="button" data-tut="end">그만 보기</button>'+(tutI>0?'<button class="btn sm" type="button" data-tut="prev">이전</button>':'')+'<button class="btn sm primary" type="button" data-tut="'+(last?'done':'next')+'">'+(last?'시작하기':'다음')+'</button>'+(last?'<button class="btn sm primary" type="button" data-tut="map">🎯 연습 맵에서 해보기</button>':'')+'</div>';
   $('tutCard').hidden=false;
 }
 function tutStart(){SAVE.tut=1;persist();$('tutAsk').hidden=true;tutI=0;tutShow()}
 function tutEnd(){tutI=-1;tutClear();$('tutCard').hidden=true;HUB.tab='stash';renderHub()}
 $('tutCard').addEventListener('click',function(e){
   var b=e.target.closest('[data-tut]');if(!b)return;var a=b.dataset.tut;
+  if(a==='map'){tutEnd();startTutorialRaid();return}
   if(a==='next'&&tutI<TUT.length-1){tutI++;tutShow()}else if(a==='prev'&&tutI>0){tutI--;tutShow()}
   else{tutEnd();if(a==='done'){var g=$('go');if(g){g.classList.add('tutHL');setTimeout(function(){g.classList.remove('tutHL')},2500)}}}
 });
 $('tutGo').addEventListener('click',tutStart);
+$('tutMapGo').addEventListener('click',startTutorialRaid);
+$('tutMapBtn').addEventListener('click',startTutorialRaid);
 $('tutBtn').addEventListener('click',function(){if(state==='menu')tutStart()});
 $('tutSkip').addEventListener('click',function(){SAVE.tut=1;persist();$('tutAsk').hidden=true;hubMsg('튜토리얼은 📖 튜토리얼 버튼으로 언제든 다시 볼 수 있습니다','#8e978a')});
 function isDefaultSetup(){return !SAVE.tut&&!(SAVE.raids>0)&&!(SAVE.ext>0)&&!(SAVE.dead>0)}
 tuiBuild();applyTouchUI();if(freshLD)defaultLD();resize();renderHub();
 if(isDefaultSetup())$('tutAsk').hidden=false;
 requestAnimationFrame(frame);if(window.__lsFallback)hubMsg("이 뷰어에서는 저장이 막혀 있어 닫으면 진행이 사라집니다 (Chrome으로 열면 저장됩니다)","#e8a33a");
-window.__xz={startRaid:startRaid,update:update,render:render,updateHUD:updateHUD,drawMini:drawMini,get P(){return P},get scavs(){return scavs},get conts(){return conts},get R(){return R},get state(){return state},keys:keys,mouse:mouse,openLoot:openLoot,autoLoot:autoLoot,invClick:invClick,endRaid:endRaid,takeLoot:takeLoot,renderInv:renderInv,renderLoot:renderLoot,quickHeal:quickHeal,WEAP:WEAP,shopList:shopList,itemInfo:itemInfo,startReload:startReload,fire:fire,cycleAmmo:cycleAmmo,extracts:function(){return extracts},prints:function(){return prints},alarms:function(){return alarms},solids:function(){return solids},tryUnlock:tryUnlock,triggerAlarm:triggerAlarm,killScav:killScav,getVis:function(){return VIS_R},gasZ:function(){return gasZ},startHeal:startHeal,allies:function(){return R&&R.allies},reviveAlly:reviveAlly,tryAllyRescue:tryAllyRescue,hitAlly:hitAlly,allyMed:allyMed};
+window.__xz={get cam(){return cam},get SC(){return SC},get CW(){return CW},get CH(){return CH},startTutorialRaid:startTutorialRaid,get TP(){return TP},TPS:TPS,startRaid:startRaid,update:update,render:render,updateHUD:updateHUD,drawMini:drawMini,get P(){return P},get scavs(){return scavs},get conts(){return conts},get R(){return R},get state(){return state},keys:keys,mouse:mouse,openLoot:openLoot,autoLoot:autoLoot,invClick:invClick,endRaid:endRaid,takeLoot:takeLoot,renderInv:renderInv,renderLoot:renderLoot,quickHeal:quickHeal,WEAP:WEAP,shopList:shopList,itemInfo:itemInfo,startReload:startReload,fire:fire,cycleAmmo:cycleAmmo,extracts:function(){return extracts},prints:function(){return prints},alarms:function(){return alarms},solids:function(){return solids},tryUnlock:tryUnlock,triggerAlarm:triggerAlarm,killScav:killScav,getVis:function(){return VIS_R},gasZ:function(){return gasZ},startHeal:startHeal,allies:function(){return R&&R.allies},reviveAlly:reviveAlly,tryAllyRescue:tryAllyRescue,hitAlly:hitAlly,allyMed:allyMed};
 })();
 </script>
 
