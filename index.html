@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v84</title>
+<title>Extract Zero v85</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -596,7 +596,7 @@ function startUser(){
   var uid=S.user.uid,id=myId();
   F={m:{},loaded:false};MB=[];
   S.db.collection('names').doc(id).get().then(function(d){if(!d.exists)return S.db.collection('names').doc(id).set({uid:uid})}).catch(function(){});
-  S.db.collection('friends').doc(uid).get().then(function(d){F.m=(d.exists&&d.data().m)||{};F.loaded=true;procInbox();rerender()}).catch(function(){F.loaded=true});
+  S.db.collection('friends').doc(uid).get().then(function(d){F.m=(d.exists&&d.data().m)||{};F.loaded=true;procInbox();resumePend();rerender()}).catch(function(){F.loaded=true});
   if(unsubS)unsubS();
   unsubS=S.db.collection('saves').doc(uid).onSnapshot(function(d){
     if(!d.exists)return;var x=d.data();if(!x.adm)return;
@@ -647,17 +647,46 @@ function unfriend(uid){
   var o={};o[uid]=fsv().delete();delete F.m[uid];renderMain();
   S.db.collection('friends').doc(S.user.uid).set({m:o},{merge:true}).catch(function(e){msg(errTxt(e))})
 }
+function takeMail(id){
+  var ref=mbDoc(id);
+  if(S.db.runTransaction)return S.db.runTransaction(function(t){return t.get(ref).then(function(d){if(!d.exists)return false;t.delete(ref);return true})});
+  return ref.get().then(function(d){if(!d.exists)return false;return ref.delete().then(function(){return true})})
+}
+function pend(){return rd('xz.pend')||{}}
+function setPend(o){wr('xz.pend',o)}
 function claim(x){
+  if(S.claiming)return;
   var cd=rd('xz.claimed')||[];
-  if(cd.indexOf(x.id)<0){
-    var it=null;
-    if(x.item){try{it=JSON.parse(x.item)}catch(e){it=null}
-      if(!it||!window.XZG||!XZG.valid(it)){msg('받을 수 없는 선물입니다');return}
-      if(!XZG.give(it)){msg('보관함 칸이 부족합니다. 창고를 정리하거나 확장한 뒤 받으세요');return}}
-    if(x.cash>0&&window.XZG)XZG.addCash(Math.min(+x.cash,50000000));
-    cd.push(x.id);wr('xz.claimed',cd.slice(-300))
-  }
-  mbDoc(x.id).delete().then(function(){msg('선물을 받았습니다',true)}).catch(function(){})
+  if(cd.indexOf(x.id)>=0){mbDoc(x.id).delete().catch(function(){});return}
+  var it=null;
+  if(x.item){try{it=JSON.parse(x.item)}catch(e){it=null}
+    if(!it||!window.XZG||!XZG.valid(it)){msg('받을 수 없는 선물입니다');return}
+    if(!XZG.fits(it)){msg('보관함 칸이 부족합니다. 창고를 정리하거나 확장한 뒤 받으세요');return}}
+  var cash=x.cash>0?Math.min(+x.cash,50000000):0;
+  S.claiming=true;
+  var pd=pend();pd[x.id]={item:it,cash:cash};setPend(pd);
+  takeMail(x.id).then(function(got){
+    var p2=pend();delete p2[x.id];setPend(p2);
+    if(!got){msg('이미 받은 선물입니다');return}
+    if(it)XZG.give(it);
+    if(cash&&window.XZG)XZG.addCash(cash);
+    var c2=rd('xz.claimed')||[];c2.push(x.id);wr('xz.claimed',c2.slice(-300));
+    msg('선물을 받았습니다',true);push();
+  }).catch(function(e){msg(errTxt(e))}).then(function(){S.claiming=false})
+}
+/* 받는 도중 앱이 꺼졌을 때 복구: 우편이 서버에서 지워졌고 아직 안 받았다면 지급 */
+function resumePend(){
+  var pd=pend(),ids=Object.keys(pd);if(!ids.length||!S.user)return;
+  ids.forEach(function(id){
+    mbDoc(id).get().then(function(d){
+      var p2=pend(),e=p2[id];delete p2[id];setPend(p2);
+      if(d.exists||!e)return;
+      var cd=rd('xz.claimed')||[];if(cd.indexOf(id)>=0)return;
+      if(e.item&&!XZG.give(e.item))return;
+      if(e.cash)XZG.addCash(e.cash);
+      cd.push(id);wr('xz.claimed',cd.slice(-300));push()
+    }).catch(function(){})
+  })
 }
 function mailText(x){
   if(x.type==='req')return '<b>'+esc(x.fromName)+'</b>님이 친구 요청을 보냈습니다';
@@ -720,9 +749,13 @@ function giftForm(){
       var q=$('gfQty')?Math.floor(+$('gfQty').value):1;
       if(!(q>=1)||q>GS.sel.n){msg('수량을 확인하세요');return}
       var out=XZG.take(GS.sel.uid,q);if(!out){msg('아이템을 찾을 수 없습니다');return}
-      btnS.disabled=true;var nm=XZG.describe(out);
-      sendMail(toUid,{type:'gift',item:JSON.stringify(out)}).then(function(){giftForm();msg(nm+' 선물을 보냈습니다',true)})
-        .catch(function(e){XZG.give(out);btnS.disabled=false;msg(errTxt(e)+' · 아이템은 돌려받았습니다')})
+      btnS.disabled=true;var nm=XZG.describe(out);msg('서버에 먼저 저장하는 중…',true);
+      var c1=cl();c1.dirty=true;setCl(c1);
+      push().then(function(){
+        if(cl().dirty)throw {code:'xz/unsynced'};
+        return sendMail(toUid,{type:'gift',item:JSON.stringify(out)})
+      }).then(function(){giftForm();msg(nm+' 선물을 보냈습니다',true)})
+        .catch(function(e){XZG.give(out);btnS.disabled=false;msg((e&&e.code==='xz/unsynced'?'서버에 저장하지 못했습니다. 연결을 확인하세요':errTxt(e))+' · 아이템은 돌려받았습니다')})
     }
   }
 }
@@ -895,7 +928,7 @@ function renderMain(){
     push().then(function(){
       if(cl().dirty){bt.disabled=false;bt.removeAttribute('data-c');bt.textContent='로그아웃';msg('서버에 저장하지 못해 로그아웃을 취소했습니다. 연결을 확인하세요');return}
       return S.auth.signOut().then(function(){
-        window.__noPersist=true;try{ls().removeItem(KEY);ls().removeItem(CK)}catch(e){}
+        window.__noPersist=true;try{ls().removeItem(KEY);ls().removeItem(CK);ls().removeItem('xz.pend')}catch(e){}
         location.reload()})
     }).catch(function(e){bt.disabled=false;bt.removeAttribute('data-c');bt.textContent='로그아웃';msg(errTxt(e))})};
   if($('fdAdd'))$('fdAdd').onclick=addFriend;
@@ -5799,6 +5832,7 @@ window.XZG={
     if(!gOk(it))return false;it=JSON.parse(JSON.stringify(it));delete it.uid;if(it.w)delete it.w.uid;
     var ok=stashAdd(it);if(ok){persist();try{renderHub()}catch(e){}}return ok},
   valid:function(it){return gOk(it)},
+  fits:function(it){if(!gOk(it))return false;if(it.k==='ammo'||it.k==='med'||it.k==='mine'||it.k==='part'||it.k==='mat'||it.k==='thr'||it.k==='pick'){for(var i=0;i<SAVE.stash.length;i++)if(sameStack(SAVE.stash[i],it))return true}return SAVE.stash.length<stashCap()},
   /* v73: 관리자 전용 — 모든 아이템 카탈로그와 생성기 */
   catalog:function(){
     var o=[],id;
