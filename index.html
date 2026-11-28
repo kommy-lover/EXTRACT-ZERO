@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v88</title>
+<title>Extract Zero v89</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -1086,7 +1086,7 @@ var CAL={
   c45r:{name:'.45 RIP',dmg:28,step:2,pel:1,rv:.25,fx:'rip',sp:1,note:'RIP'},
   g12r:{name:'12게이지 RIP',dmg:9,step:1.5,pel:7,rv:.8,fx:'rip',sh:1,sp:1,note:'RIP'},
   /* v78: 40mm 유탄 — 맞은 곳(벽·적·조준 지점)에서 폭발 · 반경 피해 + 벽 철거 · 상점 전용 */
-  g40:{name:'40mm 유탄',dmg:95,step:14,pel:1,rv:5,gl:1,sp:1,note:'폭발'}
+  g40:{name:'40mm 유탄',dmg:65,step:14,pel:1,rv:5,gl:1,sp:1,note:'폭발'}
 };
 var AMMO_PRICE_MULT=17.5; /* 모든 탄약 가격 배율 (탄 1발 가치 = 등급별 기본값 × 탄종 배율 rv × 이 값). 17.5 → 6급 rv1 탄 가치 5,600 · 상점가 7,000 */
 var ROUND_VAL=[0,6,14,32,70,150,320].map(function(v){return v*AMMO_PRICE_MULT});
@@ -1109,8 +1109,8 @@ var WEAP={
   lmg:{name:'M249 경기관총',short:'LMG',cal:'c556',mag:100,delay:.075,auto:true,spread:.06,rec:.009,reload:5.5,speed:1100,mul:.95,rar:5,range:1100,noise:1050,val:38000,len:34,snd:[1700,.11]},
   awm:{name:'AWM 볼트액션',short:'AWM',cal:'c762',mag:5,delay:1.1,auto:false,spread:.001,rec:.005,reload:3.6,speed:1900,mul:2.2,rar:6,range:2000,noise:1300,val:80000,len:38,snd:[900,.25]},
   /* v78: 유탄발사기 — 탄이 날아가 착탄 지점에서 폭발 (가까이 쏘면 나도 휘말림) */
-  m79:{name:'M79 유탄발사기',short:'M79',cal:'g40',mag:1,delay:.5,auto:false,spread:.02,rec:.03,reload:2.4,speed:620,mul:1,rar:4,range:850,noise:1150,val:22000,len:24,gl:true,snd:[320,.28]},
-  m32:{name:'M32 연발 유탄발사기',short:'M32',cal:'g40',mag:6,delay:.55,auto:false,spread:.025,rec:.035,reload:.75,speed:620,mul:1,rar:5,range:900,noise:1200,val:48000,len:27,gl:true,shell:true,snd:[300,.3]},
+  m79:{name:'M79 유탄발사기',short:'M79',cal:'g40',mag:1,delay:.8,auto:false,spread:.03,rec:.03,reload:3.2,speed:520,mul:1,rar:4,range:700,noise:1150,val:22000,len:24,gl:true,snd:[320,.28]},
+  m32:{name:'M32 연발 유탄발사기',short:'M32',cal:'g40',mag:6,delay:.95,auto:false,spread:.035,rec:.035,reload:1.7,speed:520,mul:1,rar:5,range:750,noise:1200,val:48000,len:27,gl:true,shell:true,snd:[300,.3]},
   mosin:{name:'모신나강 소총',short:'MOS',cal:'c762',mag:5,delay:.85,auto:false,spread:.01,rec:.012,reload:3,speed:1300,mul:1.15,rar:2,range:1400,noise:1100,val:3500,len:36,snd:[1100,.17]},
   /* ===== 1급 ===== */
   ruger22:{name:'Ruger 10/22 소총',short:'10/22',cal:'c22',mag:10,delay:.16,auto:false,spread:.02,rec:.005,reload:2,speed:1000,mul:1,rar:1,range:800,noise:420,val:1800,len:24,snd:[2600,.05]},
@@ -2853,7 +2853,7 @@ function nearMine(rad){var b=null,bd=rad;for(var i=0;i<R.mines.length;i++){var m
 function bulletMine(sx,sy,ux,uy,th){for(var i=0;i<R.mines.length;i++){var m=R.mines[i];if(m.dead||!m.rev)continue;if(rayCircle(sx,sy,ux,uy,m.x,m.y,12,th)<th)return m}return null}
 /* 폭발: 반경 120, 중심 85 피해(플레이어, 방어구 무시) / 150(스캐브) → 가장자리로 갈수록 감소. 근처 지뢰는 연쇄 폭발, 소리는 1700 까지 */
 /* v78: 40mm 유탄 폭발 — 반경 GL_R · 중심 피해 dmg(탄 등급 반영) · 거리에 따라 감소 · 벽 철거 · 근처 지뢰 유폭 · 나도 피해(60%) */
-var GL_R=120;
+var GL_R=88;
 function glBlast(x,y,dmg){
   demolish(x,y,GL_R*.6);
   blasts.push({x:x,y:y,t:0,r:GL_R});spark(x,y,'#ffb347',16);spark(x,y,'#6b6258',8);
