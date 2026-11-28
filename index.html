@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v87</title>
+<title>Extract Zero v88</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -1350,9 +1350,9 @@ var PREF={ar:380,m14:480,dmr:560,shot:200,deagle:300,glock:260,m1911:280,mac10:2
   vss:520,xm7:480,m110:650,hk416a:400,usas:200,mg3:420,mk48:480,ripmg:420,pkmi:440,axmc:760,barrett:850,lmgap:450,kord:520,minigun:420,brksmg:260,brkar:380,brkdmr:480,brkmg:440};
 
 /* ============ SAVE / STASH / LOADOUT ============ */
-var STASH_BASE=100,STASH_STEP=20,STASH_PRICE=1500,SELL=.7,BUY=1.25;
+var STASH_BASE=100,STASH_STEP=20,STASH_PRICE=150000,SELL=.7,BUY=1.25;
 function stashCap(){return Math.max(STASH_BASE,Math.round(+SAVE.cap)||STASH_BASE)}
-function expandPrice(){var n=Math.max(0,Math.round((stashCap()-STASH_BASE)/STASH_STEP));return 25000+12500*n}
+function expandPrice(){return STASH_PRICE}
 function stashWarn(){
   var left=stashCap()-SAVE.stash.length;if(left>50)return '';
   return left<=0?'<div class="rowbar" style="color:#fff;background:#8c2a22;border:1px solid #e0533f;padding:6px 8px;border-radius:4px">⚠ 창고가 가득 찼습니다. 새 물품을 가져와도 자동 판매됩니다. 정리하거나 확장하세요</div>'
