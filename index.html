@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v93</title>
+<title>Extract Zero v104</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -362,6 +362,17 @@ body.tm .eq{padding:10px}
 .setrow input[type=range]{flex:1 1 120px;min-width:100px;height:30px;accent-color:var(--accent);touch-action:manipulation}
 .setrow .sv{font:700 12px var(--f-mono);min-width:40px;text-align:right}
 /* v92: 폰 가로 화면 UI 정리 */
+/* v104: 유탄 1발 가격 상향 — 표준 6,000 · 고폭 18,000 · 열압력 40,000 */
+/* v103: 유탄 — 반경 42(스캐브 1.5마리), 탄 3종(표준·고폭·열압력) 통일·1발 고정가, 상자 유탄 1~3발, 출격 수량 소량, M79 5등급 ₩120,000 · M32 6등급 ₩280,000 */
+/* v102: 살포 드론 — 지뢰 간격 제한 제거, 비행 속도 230 복구 */
+/* v101: 맵에 깔린 지뢰는 예전 피해(위력·거리 비례)로 복구, 단 최대 체력의 75%를 넘지 않음 — 내 폭발물만 고정 20 */
+/* v100: 치료 드론 롤백 · 자폭 드론 → 지뢰 살포 드론(소형 지뢰 3개 투하) */
+/* v99: 드론·지뢰·유탄발사기 너프 + 내가 맞는 폭발 피해는 고정 20 */
+/* v98: 치료 연막도 일반 연막과 같은 시야 차단 벽 규칙 */
+/* v97: 연막 반경 증가 — 위장 연막 125→150, 엄폐 신호탄 연막 95→115 */
+/* v96: 연막을 시야 차단 벽으로 — 바깥에선 가장자리 너머 안 보임, 안에선 반경 60만 보임, 나·스캐브 동일 규칙 (연막 수치는 v94로 복구) */
+/* v95: 연막 너프 — 반경 125→105·지속 16→10초·시야 차단은 중심부(반경 72%)만, 엄폐 신호탄 연막 10→6초 / 섬광 너프 — 반경 ×0.75·기절 ×0.6·거리 멀수록 기절 최대 절반까지 감소 */
+/* v94: 파편(폭발) 수류탄 너프 — 피해 ×0.6·반경 ×0.88 / 장판형 버프 — 독가스·방사 피해 ×1.6·반경 ×1.2·지속 ×1.3(내 자해 피해는 유지), 빙결 반경·지속↑·둔화 강화·냉기 피해 추가 */
 @media (pointer:coarse) and (max-height:520px){
   body:not(.tm) .menu-in,.menu-in{display:flex!important;flex-direction:column;gap:12px;padding:10px 12px 96px!important}
   .menu-in,.brand,.load,#hub,#hubBody{width:100%!important;min-width:0!important;max-width:100vw!important}
@@ -472,7 +483,7 @@ body.tm .eq{padding:10px}
           <kbd>F</kbd><span>가장 비싼 물건 자동 획득 · 가방이 가득 차면 가장 싼 물건과 교환</span>
           <kbd>Tab</kbd><span>인벤토리 (좌클릭 사용·장착, 우클릭 버리기)</span>
           <kbd>H</kbd><span>치료 아이템 사용</span>
-          <kbd>B</kbd><span>자폭 드론(C4) 기폭</span>
+          <kbd>B</kbd><span>지뢰 살포 드론 소형 지뢰 투하</span>
           <kbd>N</kbd><span>감시 드론이 소리를 내 스캐브 유인</span>
           <kbd>Esc</kbd><span>일시정지 · M 전체 소리 끄기 (세부 설정은 ⚙ 설정)</span>
         </div>
@@ -1126,7 +1137,7 @@ var CAL={
   c45r:{name:'.45 RIP',dmg:28,step:2,pel:1,rv:.25,fx:'rip',sp:1,note:'RIP'},
   g12r:{name:'12게이지 RIP',dmg:9,step:1.5,pel:7,rv:.8,fx:'rip',sh:1,sp:1,note:'RIP'},
   /* v78: 40mm 유탄 — 맞은 곳(벽·적·조준 지점)에서 폭발 · 반경 피해 + 벽 철거 · 상점 전용 */
-  g40:{name:'40mm 유탄',dmg:65,step:14,pel:1,rv:5,gl:1,sp:1,note:'폭발'}
+  g40:{name:'40mm 유탄',dmg:32.5,step:12.5,pel:1,rv:5,gl:1,sp:1,note:'폭발'}
 };
 var AMMO_PRICE_MULT=17.5; /* 모든 탄약 가격 배율 (탄 1발 가치 = 등급별 기본값 × 탄종 배율 rv × 이 값). 17.5 → 6급 rv1 탄 가치 5,600 · 상점가 7,000 */
 var ROUND_VAL=[0,6,14,32,70,150,320].map(function(v){return v*AMMO_PRICE_MULT});
@@ -1149,8 +1160,8 @@ var WEAP={
   lmg:{name:'M249 경기관총',short:'LMG',cal:'c556',mag:100,delay:.075,auto:true,spread:.06,rec:.009,reload:5.5,speed:1100,mul:.95,rar:5,range:1100,noise:1050,val:38000,len:34,snd:[1700,.11]},
   awm:{name:'AWM 볼트액션',short:'AWM',cal:'c762',mag:5,delay:1.1,auto:false,spread:.001,rec:.005,reload:3.6,speed:1900,mul:2.2,rar:6,range:2000,noise:1300,val:80000,len:38,snd:[900,.25]},
   /* v78: 유탄발사기 — 탄이 날아가 착탄 지점에서 폭발 (가까이 쏘면 나도 휘말림) */
-  m79:{name:'M79 유탄발사기',short:'M79',cal:'g40',mag:1,delay:.8,auto:false,spread:.03,rec:.03,reload:3.2,speed:520,mul:1,rar:4,range:700,noise:1150,val:22000,len:24,gl:true,snd:[320,.28]},
-  m32:{name:'M32 연발 유탄발사기',short:'M32',cal:'g40',mag:6,delay:.95,auto:false,spread:.035,rec:.035,reload:1.7,speed:520,mul:1,rar:5,range:750,noise:1200,val:48000,len:27,gl:true,shell:true,snd:[300,.3]},
+  m79:{name:'M79 유탄발사기',short:'M79',cal:'g40',mag:1,delay:.8,auto:false,spread:.03,rec:.03,reload:3.6,speed:520,mul:1,rar:5,range:700,noise:1150,val:120000,len:24,gl:true,snd:[320,.28]},
+  m32:{name:'M32 연발 유탄발사기',short:'M32',cal:'g40',mag:6,delay:1.15,auto:false,spread:.035,rec:.035,reload:2.2,speed:520,mul:1,rar:6,range:750,noise:1200,val:280000,len:27,gl:true,shell:true,snd:[300,.3]},
   mosin:{name:'모신나강 소총',short:'MOS',cal:'c762',mag:5,delay:.85,auto:false,spread:.01,rec:.012,reload:3,speed:1300,mul:1.15,rar:2,range:1400,noise:1100,val:3500,len:36,snd:[1100,.17]},
   /* ===== 1급 ===== */
   ruger22:{name:'Ruger 10/22 소총',short:'10/22',cal:'c22',mag:10,delay:.16,auto:false,spread:.02,rec:.005,reload:2,speed:1000,mul:1,rar:1,range:800,noise:420,val:1800,len:24,snd:[2600,.05]},
@@ -1320,31 +1331,31 @@ var MINE_VAL=15000,MINE_STACK=5,MINE_LD_MAX=99999,MINE_PLANT_T=0,MINE_ARM_T=2,MI
 var THR_STACK=4,THR_LD_MAX=99999;
 /* 투척류: 재료 n개 → 1개. Q 로 마우스 방향 투척, Z 로 종류 선택. kind: gas/rad=독성 구역(초당 피해 dps) · frost=스캐브 둔화 · flash=기절 · smoke=스캐브 시야 차단 */
 var THR={
-  tGas:{name:'독가스 수류탄',mat:'cata',n:3,val:6000,rar:4,kind:'gas',r:120,dur:12,dps:18,col:'150,200,60',desc:'독구름 12초 · 스캐브 초당 18 피해 (나도 중독됨)'},
-  tRad:{name:'방사 수류탄',mat:'ura',n:4,val:11000,rar:5,kind:'rad',r:140,dur:15,dps:28,col:'95,224,192',desc:'방사선 구역 15초 · 스캐브 초당 28 피해 (나도 피폭)'},
-  tFrost:{name:'빙결 수류탄',mat:'frost',n:3,val:7000,rar:4,kind:'frost',r:130,dur:9,col:'154,208,232',desc:'빙결 구역 9초 · 스캐브 행동이 크게 느려짐'},
-  tFlash:{name:'폭동 진압 섬광탄',mat:'cuff',n:2,val:5000,rar:4,kind:'flash',r:260,stun:4,col:'255,255,255',desc:'반경 260 · 시선이 닿는 스캐브 4초 기절 (나도 눈이 멈)'},
-  tSmoke:{name:'야간 위장 연막탄',mat:'seal',n:2,val:4000,rar:3,kind:'smoke',r:125,dur:16,col:'190,196,200',desc:'연막 16초 · 안과 너머의 나를 스캐브가 볼 수 없음'},
-  tCover:{name:'긴급 엄폐 신호탄',mat:'powder',n:3,val:6000,rar:3,kind:'cover',r:95,dur:10,len:210,th:24,life:28,col:'232,92,64',desc:'던진 곳에 방탄 엄폐벽 28초 + 연막 10초 · 총알·시선 차단 (신호 섬광에 근처 스캐브가 반응)'},
-  tHeal:{name:'치료 연막탄',mat:'serum',n:3,val:7000,rar:4,kind:'heal',r:125,dur:14,hps:7,col:'110,230,150',desc:'치료 연막 14초 · 안에 있으면 초당 7 회복 + 화상·중독 완화 · 스캐브 시선 일부 차단'},
-  tHealX:{name:'고농도 치료 연막탄',mat:'serum',n:6,val:16000,rar:5,kind:'heal',r:150,dur:20,hps:11,col:'90,235,190',desc:'넓은 치료 연막 20초 · 안에 있으면 초당 11 회복 + 화상·중독 완화'},
+  tGas:{name:'독가스 수류탄',mat:'cata',n:3,val:6000,rar:4,kind:'gas',r:144,dur:16,dps:29,col:'150,200,60',desc:'독구름 16초 · 넓은 반경 · 스캐브 초당 29 피해 (나도 중독됨)'},
+  tRad:{name:'방사 수류탄',mat:'ura',n:4,val:11000,rar:5,kind:'rad',r:168,dur:20,dps:45,col:'95,224,192',desc:'방사선 구역 20초 · 넓은 반경 · 스캐브 초당 45 피해 (나도 피폭)'},
+  tFrost:{name:'빙결 수류탄',mat:'frost',n:3,val:7000,rar:4,kind:'frost',dps:6,r:160,dur:13,col:'154,208,232',desc:'넓은 빙결 구역 13초 · 스캐브 행동이 매우 느려짐 + 초당 6 냉기 피해'},
+  tFlash:{name:'폭동 진압 섬광탄',mat:'cuff',n:2,val:5000,rar:4,kind:'flash',r:195,stun:2.5,col:'255,255,255',desc:'반경 195 · 시선이 닿는 스캐브 최대 2.5초 기절(멀수록 짧음) (나도 눈이 멈)'},
+  tSmoke:{name:'야간 위장 연막탄',mat:'seal',n:2,val:4000,rar:3,kind:'smoke',r:150,dur:16,col:'190,196,200',desc:'연막 16초 · 시야를 막는 벽 — 너머는 서로 안 보임 · 안에 들어가면 바로 곁만 보임 (나와 스캐브 모두)'},
+  tCover:{name:'긴급 엄폐 신호탄',mat:'powder',n:3,val:6000,rar:3,kind:'cover',r:115,dur:10,len:210,th:24,life:28,col:'232,92,64',desc:'던진 곳에 방탄 엄폐벽 28초 + 연막 10초 · 총알·시선 차단 (신호 섬광에 근처 스캐브가 반응)'},
+  tHeal:{name:'치료 연막탄',mat:'serum',n:3,val:7000,rar:4,kind:'heal',r:125,dur:14,hps:7,col:'110,230,150',desc:'치료 연막 14초 · 안에 있으면 초당 7 회복 + 화상·중독 완화 · 시야를 막는 벽 — 너머는 서로 안 보임, 안에선 바로 곁만 보임'},
+  tHealX:{name:'고농도 치료 연막탄',mat:'serum',n:6,val:16000,rar:5,kind:'heal',r:150,dur:20,hps:11,col:'90,235,190',desc:'넓은 치료 연막 20초 · 안에 있으면 초당 11 회복 + 화상·중독 완화 · 시야를 막는 벽 — 너머는 서로 안 보임, 안에선 바로 곁만 보임'},
   tDrone:{name:'치료 드론',mat:'dcore',n:3,val:9000,rar:4,kind:'drone',dur:40,hps:4,desc:'던지면 전개 · 40초간 따라다니며 초당 4 회복 · 화상 진화'},
   tDroneX:{name:'정예 치료 드론',mat:'dcore',n:6,val:22000,rar:5,kind:'drone',dur:50,hps:8,cure:1,desc:'50초간 따라다니며 초당 8 회복 · 화상·중독·피폭 완화'},
-  tSample:{name:'실험체 독성탄',mat:'sample',n:3,val:8000,rar:4,kind:'gas',r:125,dur:11,dps:24,col:'190,120,230',desc:'변이 독구름 11초 · 스캐브 초당 24 피해 (나도 중독됨)'},
-  tHerb:{name:'독초 연기탄',mat:'herb',n:2,val:4500,rar:3,kind:'gas',r:115,dur:13,dps:14,col:'120,170,70',desc:'독초 연기 13초 · 스캐브 초당 14 피해 (나도 중독됨)'},
-  tRelic:{name:'황무지 낙진탄',mat:'relic',n:4,val:14000,rar:5,kind:'rad',r:135,dur:14,dps:32,col:'230,200,120',desc:'유물 방사 구역 14초 · 스캐브 초당 32 피해 (나도 피폭)'},
-  tSerum:{name:'산성 약품탄',mat:'serum',n:3,val:7000,rar:4,kind:'gas',r:120,dur:10,dps:22,col:'200,230,90',desc:'산성 구름 10초 · 스캐브 초당 22 피해 (나도 중독됨)'},
-  tKey:{name:'해킹 교란탄',mat:'key',n:3,val:7000,rar:4,kind:'flash',r:280,stun:5,col:'120,200,255',desc:'반경 280 · 시선이 닿는 스캐브 5초 기절 (나도 눈이 멈)'},
-  tStamp:{name:'검문 경보 섬광탄',mat:'stamp',n:2,val:5000,rar:3,kind:'flash',r:240,stun:3,col:'255,230,120',desc:'반경 240 · 시선이 닿는 스캐브 3초 기절 (나도 눈이 멈)'},
-  tRelay:{name:'구조 조명탄',mat:'relay',n:3,val:8000,rar:4,kind:'flash',r:300,stun:4,col:'150,255,200',desc:'반경 300 · 시선이 닿는 스캐브 4초 기절 (나도 눈이 멈)'},
-  tDcore:{name:'전자기 펄스탄',mat:'dcore',n:3,val:10000,rar:4,kind:'flash',r:270,stun:6,col:'160,200,255',desc:'반경 270 · 시선이 닿는 스캐브 6초 기절 (나도 눈이 멈)'},
-  tGold:{name:'황금 파편탄',mat:'gold',n:2,val:11000,rar:4,kind:'cluster',r:204,cr:[204,153,122],cd:[100,68,52],kids:[3,2],col:'255,210,90',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
-  tRebar:{name:'철근 파편탄',mat:'rebar',n:2,val:6500,rar:3,kind:'cluster',r:194,cr:[194,143],cd:[90,60],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (나도 피해 절반)'},
-  tSteel:{name:'강철 파편 폭탄',mat:'steel',n:3,val:13000,rar:4,kind:'cluster',r:235,cr:[235,184,143],cd:[130,90,64],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (나도 피해 절반)'},
-  tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:60,hp:160,spd:210,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격 · 체력 160 · 스캐브가 쏘면 맞음(피격 판정 있음) · 60초'},
-  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:120,vr:560,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 120초 · 시야 반경 560 · 반경 200 원 안은 벽·어둠에 상관없이 항상 시야 확보(적·지뢰 모두 보임) · N 키로 소리를 내 스캐브 유인'},
-  tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:2,val:9000,rar:4,kind:'cluster',r:224,cr:[214,163,133],cd:[110,76,56],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (나도 피해 절반)'},
-  tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:4,val:22000,rar:5,kind:'cluster',r:265,cr:[265,204,163],cd:[160,110,76],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (나도 피해 절반)'}
+  tSample:{name:'실험체 독성탄',mat:'sample',n:3,val:8000,rar:4,kind:'gas',r:150,dur:14,dps:38,col:'190,120,230',desc:'변이 독구름 14초 · 넓은 반경 · 스캐브 초당 38 피해 (나도 중독됨)'},
+  tHerb:{name:'독초 연기탄',mat:'herb',n:2,val:4500,rar:3,kind:'gas',r:138,dur:17,dps:22,col:'120,170,70',desc:'독초 연기 17초 · 넓은 반경 · 스캐브 초당 22 피해 (나도 중독됨)'},
+  tRelic:{name:'황무지 낙진탄',mat:'relic',n:4,val:14000,rar:5,kind:'rad',r:162,dur:18,dps:51,col:'230,200,120',desc:'유물 방사 구역 18초 · 넓은 반경 · 스캐브 초당 51 피해 (나도 피폭)'},
+  tSerum:{name:'산성 약품탄',mat:'serum',n:3,val:7000,rar:4,kind:'gas',r:144,dur:13,dps:35,col:'200,230,90',desc:'산성 구름 13초 · 넓은 반경 · 스캐브 초당 35 피해 (나도 중독됨)'},
+  tKey:{name:'해킹 교란탄',mat:'key',n:3,val:7000,rar:4,kind:'flash',r:210,stun:3,col:'120,200,255',desc:'반경 210 · 시선이 닿는 스캐브 최대 3초 기절(멀수록 짧음) (나도 눈이 멈)'},
+  tStamp:{name:'검문 경보 섬광탄',mat:'stamp',n:2,val:5000,rar:3,kind:'flash',r:180,stun:2,col:'255,230,120',desc:'반경 180 · 시선이 닿는 스캐브 최대 2초 기절(멀수록 짧음) (나도 눈이 멈)'},
+  tRelay:{name:'구조 조명탄',mat:'relay',n:3,val:8000,rar:4,kind:'flash',r:225,stun:2.5,col:'150,255,200',desc:'반경 225 · 시선이 닿는 스캐브 최대 2.5초 기절(멀수록 짧음) (나도 눈이 멈)'},
+  tDcore:{name:'전자기 펄스탄',mat:'dcore',n:3,val:10000,rar:4,kind:'flash',r:205,stun:3.5,col:'160,200,255',desc:'반경 205 · 시선이 닿는 스캐브 최대 3.5초 기절(멀수록 짧음) (나도 눈이 멈)'},
+  tGold:{name:'황금 파편탄',mat:'gold',n:2,val:11000,rar:4,kind:'cluster',r:180,cr:[180,135,107],cd:[60,41,31],kids:[3,2],col:'255,210,90',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 분열 · 총 10회 연쇄 폭발 (내가 맞으면 고정 20)'},
+  tRebar:{name:'철근 파편탄',mat:'rebar',n:2,val:6500,rar:3,kind:'cluster',r:171,cr:[171,126],cd:[54,36],kids:[3],col:'200,170,140',desc:'착탄 폭발 → 파편탄 3개 · 총 4회 연쇄 폭발 (내가 맞으면 고정 20)'},
+  tSteel:{name:'강철 파편 폭탄',mat:'steel',n:3,val:13000,rar:4,kind:'cluster',r:207,cr:[207,162,126],cd:[78,54,38],kids:[3,3],col:'190,200,210',desc:'착탄 폭발 → 파편탄 3개 → 각각 3개로 분열 · 총 13회 연쇄 폭발 (내가 맞으면 고정 20)'},
+  tCombat:{name:'전투 드론',mat:'sensor',n:5,val:26000,rar:5,kind:'combat',dur:40,hp:110,spd:190,desc:'던지면 전개 · 마우스를 따라다니며 시야 안의 스캐브를 자동 사격(발당 7) · 체력 110 · 스캐브가 쏘면 맞음(피격 판정 있음) · 40초'},
+  tScout:{name:'정찰 드론',mat:'sensor',n:2,val:9000,rar:4,kind:'scout',dur:80,vr:460,spd:190,desc:'던지면 전개 · 마우스를 따라다님 · 80초 · 시야 반경 460 · 반경 160 원 안은 벽·어둠에 상관없이 항상 시야 확보(적·지뢰 모두 보임) · N 키로 소리를 내 스캐브 유인'},
+  tCluster:{name:'칼날 파편 수류탄',mat:'blade',n:2,val:9000,rar:4,kind:'cluster',r:197,cr:[188,143,117],cd:[66,46,34],kids:[3,2],col:'255,150,60',desc:'착탄 폭발 → 파편탄 3개 → 각각 2개로 또 분열 · 총 10회 연쇄 폭발 (내가 맞으면 고정 20)'},
+  tClusterX:{name:'대형 칼날 파편 수류탄',mat:'blade',n:4,val:22000,rar:5,kind:'cluster',r:233,cr:[233,180,143],cd:[96,66,46],kids:[4,3],col:'255,120,40',desc:'착탄 폭발 → 파편탄 4개 → 각각 3개로 분열 · 총 17회 연쇄 폭발 · 큰 반경 (내가 맞으면 고정 20)'}
 };
 function thrItem(id,n){return {k:'thr',id:id,n:n,r:THR[id].rar,v:THR[id].val}}
 var MATS={sensor:{name:'정찰 센서 모듈',src:'지뢰밭 폐기지',val:2500,rar:3},cata:{name:'촉매 앰풀',src:'화학 공단',val:3000,rar:3},ura:{name:'우라늄 광석',src:'방사능 폐광',val:4000,rar:4},frost:{name:'서리 결정',src:'설원 기지',val:3000,rar:3},cuff:{name:'락픽 부품',src:'교도소 폭동',val:2500,rar:3},seal:{name:'컨테이너 봉인',src:'항구 야간',val:2500,rar:3},sample:{name:'연구 샘플',src:'지하 연구소',val:3500,rar:3},gold:{name:'금괴 조각',src:'은행 강도',val:4500,rar:4},key:{name:'암호 키 조각',src:'군 보안 시설',val:3000,rar:3},
@@ -1357,7 +1368,7 @@ var CRAFTS=[{id:'antiGel',mat:'sample',n:2},{id:'fastInj',mat:'sample',n:3},{id:
 var CRAFT_THR=['tScout','tCombat','tCover','tGas','tRad','tFrost','tFlash','tSmoke','tHeal','tHealX','tDrone','tDroneX','tCluster','tClusterX','tSample','tHerb','tRelic','tSerum','tKey','tRelay','tDcore','tRebar','tSteel'];
 var PICK_RECIPE={mat:'cuff',n:2,val:4000,rar:4};
 /* 특수 지뢰: 대인지뢰 + 투척류 → 터질 때 투척 효과가 함께 발동 (폭발 피해는 MTY_DMG 배). 지뢰 종류 키 = 위력 + 100×종류번호 (0 = 일반) */
-var MTY=[null,'tGas','tRad','tFrost','tFlash','tSmoke','tScout'],MTY_NAME=['대인지뢰','독가스 지뢰','방사 지뢰','빙결 지뢰','섬광 지뢰','연막 지뢰','자폭 드론'],MTY_DMG=.6,C4_TY=6,C4_VIS=300,C4_HOVER=34;
+var MTY=[null,'tGas','tRad','tFrost','tFlash','tSmoke','tScout'],MTY_NAME=['대인지뢰','독가스 지뢰','방사 지뢰','빙결 지뢰','섬광 지뢰','연막 지뢰','지뢰 살포 드론'],MTY_DMG=.6,C4_TY=6,C4_VIS=300,C4_HOVER=34;
 function mkPw(k){return (+k||MINE_PW_BASE)%100||MINE_PW_BASE}
 function mkTy(k){return Math.floor((+k||0)/100)}
 function mkey(o){return (o.pw||MINE_PW_BASE)+100*(o.ty||0)}
@@ -1365,8 +1376,8 @@ function mineLabel(k){return MTY_NAME[mkTy(k)]+' 위력 '+mkPw(k)}
 function mineVal(k){var t=mkTy(k);return Math.round(MINE_VAL*mkPw(k)/MINE_PW_BASE)+(t?THR[MTY[t]].val:0)}
 function mineItem(n,k){k=k||MINE_PW_BASE;var pw=mkPw(k),ty=mkTy(k);return {k:'mine',name:MTY_NAME[ty],r:clamp(Math.ceil(pw/2)+(ty?1:0),1,6),v:mineVal(k),n:n,pw:pw,ty:ty}}
 function partItem(n){return {k:'part',name:'지뢰 부품',r:2,v:PART_VAL,n:n}}
-function mineBlast(k){return 130+8*mkPw(k)}
-function mineDmg(k){return Math.round((70+20*mkPw(k))*(mkTy(k)&&mkTy(k)!==C4_TY?MTY_DMG:1))}
+function mineBlast(k){return 115+7*mkPw(k)}
+function mineDmg(k){return Math.round((50+14*mkPw(k))*(mkTy(k)&&mkTy(k)!==C4_TY?MTY_DMG:1))}
 function mineSelf(k){return Math.round((40+9*mkPw(k))*(mkTy(k)&&mkTy(k)!==C4_TY?MTY_DMG:1))}
 var TIERW={1:[44,28,16,8,3,1],2:[16,26,28,19,9,2],3:[3,10,22,28,23,14]};
 var CONT_NAMES={1:['서랍장','가방','공구함','냉장고','쓰레기통'],2:['군용 보급 상자','의료 가방','탄약 상자'],3:['금고','무기 보관함','VIP 가방']};
@@ -1399,6 +1410,13 @@ function stashWarn(){
    :'<div class="rowbar" style="color:#ffd9a0;background:#4a3515;border:1px solid #e8a33a;padding:6px 8px;border-radius:4px">⚠ 창고 남은 칸 '+left+'칸 (50칸 이하). 곧 가득 찹니다</div>'
 }
 var QTY={g40:[0,2,4,6,9,12,18],c556:[0,30,60,90,120,180,240],c762:[0,20,40,60,100,140],g12:[0,8,16,24,32,48],a50:[0,14,28,42,56],c9:[0,30,60,90,120,180,240],c45:[0,25,50,75,100,150],c545:[0,30,60,90,120,180,240]};
+/* v103: 유탄은 3종(표준·고폭·열압력 = 내부 등급 2·4·6)으로 통일. 1발 가격은 고정값(GL_PRICE), 출격 수량 단계도 소량 */
+var GL_GR={2:'표준',4:'고폭',6:'열압력'},GL_PRICE={2:6000,4:18000,6:40000};
+function glC(c){return c<=2?2:c<=4?4:6}
+function isGL(cal){return !!(CAL[cal]&&CAL[cal].gl)}
+function normAmmo(it){if(it&&it.k==='ammo'&&isGL(it.cal))it.c=glC(it.c);if(it&&it.k==='weapon'&&it.w&&WEAP[it.w.id]&&isGL(WEAP[it.w.id].cal))it.w.mag.cls=glC(it.w.mag.cls);return it}
+function roundVal(cal,c){return isGL(cal)?GL_PRICE[glC(c)]:ROUND_VAL[c]*CAL[cal].rv}
+Object.keys(CAL).forEach(function(c){if(CAL[c].gl)QTY[c]=[0,2,4,6,9,12,18]});
 Object.keys(CAL).forEach(function(c){if(!QTY[c])QTY[c]=CAL[c].hv?[0,5,10,20,30,50]:CAL[c].sh?[0,8,16,24,32,48]:[0,30,60,90,120,180,240]});
 var SAVE={cap:100,raids:0,ext:0,dead:0,best:0,total:0,cash:30000,stash:null,mode:'n',map:'o',ld:null,uid:1};
 try{
@@ -1406,6 +1424,7 @@ try{
   if(sv&&typeof sv==='object'){for(var k0 in sv)SAVE[k0]=sv[k0]}
   else{var o1=JSON.parse(LS.getItem('xz.save.v1')||'null');if(o1&&typeof o1==='object')['raids','ext','dead','best','total'].forEach(function(k){if(typeof o1[k]==='number')SAVE[k]=o1[k]})}
 }catch(e){}
+function normSave(){try{(SAVE.stash||[]).forEach(normAmmo);if(typeof LD!=='undefined'&&LD&&LD.ammo)Object.keys(LD.ammo).forEach(function(c){if(isGL(c)&&LD.ammo[c])LD.ammo[c].c=glC(LD.ammo[c].c||2)})}catch(e){}}
 function persist(){if(window.__noPersist)return;try{LS.setItem('xz.save.v2',JSON.stringify(SAVE));if(window.XZC)XZC.queue()}catch(e){}}
 function nid(){return SAVE.uid++}
 
@@ -1553,6 +1572,7 @@ function stashTakePart(n){
   return got;
 }
 function stashAdd(it){
+  normAmmo(it);
   if(it.k==='ammo'||it.k==='med'||it.k==='mine'||it.k==='part'||it.k==='mat'||it.k==='thr'||it.k==='pick'){for(var i=0;i<SAVE.stash.length;i++){var s=SAVE.stash[i];if(sameStack(s,it)){s.n+=it.n;return true}}}
   if(SAVE.stash.length>=stashCap())return false;
   if(it.k==='weapon'){if(!it.w.uid)it.w.uid=nid();it.uid=it.w.uid}else if(!it.uid)it.uid=nid();
@@ -1601,18 +1621,18 @@ function itemRar(it){if(it.r)return it.r;if(it.k==='gear'||it.k==='ammo')return 
 function itemValue(it){
   switch(it.k){
     case 'gear':{var g=GEAR[it.t];var f=it.max?(0.5+0.5*it.dur/it.max):1;return g.val[it.c]*f}
-    case 'ammo':return ROUND_VAL[it.c]*CAL[it.cal].rv*it.n;
+    case 'ammo':return roundVal(it.cal,it.c)*it.n;
     case 'med':return MEDS[it.id].val*it.n;
-    case 'weapon':return WEAP[it.w.id].val+it.w.mag.n*ROUND_VAL[it.w.mag.cls]*CAL[WEAP[it.w.id].cal].rv;
+    case 'weapon':return WEAP[it.w.id].val+it.w.mag.n*roundVal(WEAP[it.w.id].cal,it.w.mag.cls);
     default:return it.v*it.n;
   }
 }
 function itemInfo(it){
   switch(it.k){
     case 'gear':{var g=GEAR[it.t];return {name:g.name+' '+ROMAN[it.c]+'급',sub:it.max?('내구 '+Math.ceil(it.dur)+'/'+it.max):(g.slots[it.c]+'칸'),ico:g.ico}}
-    case 'ammo':return {name:CAL[it.cal].name+' '+ROMAN[it.c]+'급',sub:'피해 '+Math.round(calDmg(it.cal,it.c))+(CAL[it.cal].note?' · '+CAL[it.cal].note:''),ico:'탄약'};
+    case 'ammo':return {name:isGL(it.cal)?'40mm '+GL_GR[glC(it.c)]+' 유탄':CAL[it.cal].name+' '+ROMAN[it.c]+'급',sub:'피해 '+Math.round(calDmg(it.cal,it.c))+(CAL[it.cal].note?' · '+CAL[it.cal].note:''),ico:'탄약'};
     case 'med':{var md=MEDS[it.id];return {name:md.name,sub:medDesc(md),ico:'의료'}}
-    case 'mine':{var mk0=mkey(it),mt0=mkTy(mk0),mx0=mt0?THR[MTY[mt0]].name:'';if(mt0===C4_TY)return {name:mineLabel(mk0),sub:'자폭 드론 · 마우스를 따라다님 · B 로 기폭',ico:'C4',det:'자폭 드론 · G 로 전개하면 마우스를 따라다니며 주변 시야 확보 · B 로 기폭(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해) · 90초 · ₩'+fmt(it.v)};return {name:mineLabel(mk0),sub:mt0?'설치형 · '+mx0+' 효과 동반':'설치형 · G 즉시 설치',ico:'지뢰',det:'설치형 무기 · 스캐브가 밟으면 폭발(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해)'+(mt0?' + '+mx0+' 효과 발동':'')+' · G 즉시 설치 · E 회수 · ₩'+fmt(it.v)}}
+    case 'mine':{var mk0=mkey(it),mt0=mkTy(mk0),mx0=mt0?THR[MTY[mt0]].name:'';if(mt0===C4_TY)return {name:mineLabel(mk0),sub:'살포 드론 · 소형 지뢰 '+DROP_N+'개 · B 로 투하',ico:'C4',det:'지뢰 살포 드론 · G 로 전개하면 마우스를 따라다니며 주변 시야 확보 · B 를 누를 때마다 드론 아래에 소형 지뢰(위력 '+dropPw(mk0)+', 반경 '+mineBlast(dropPw(mk0))+', 중심 '+mineDmg(dropPw(mk0))+' 피해)를 투하 · '+DROP_N+'개 · 스캐브가 밟아야 터짐 · 60초 · ₩'+fmt(it.v)};return {name:mineLabel(mk0),sub:mt0?'설치형 · '+mx0+' 효과 동반':'설치형 · G 즉시 설치',ico:'지뢰',det:'설치형 무기 · 스캐브가 밟으면 폭발(반경 '+mineBlast(mk0)+', 중심 '+mineDmg(mk0)+' 피해)'+(mt0?' + '+mx0+' 효과 발동':'')+' · G 즉시 설치 · E 회수 · ₩'+fmt(it.v)}}
     case 'thr':{var tt=THR[it.id];return {name:tt.name,sub:tt.desc,ico:'투척',det:tt.desc+' · Q 누르고 조준, 떼면 투척 · Z 종류 변경 · ₩'+fmt(it.v)}}
     case 'mat':{var mt=MATS[it.id];return {name:mt.name,sub:mt.src+' 전용 · ₩'+fmt(it.v),ico:'재료',det:mt.src+'에서만 얻는 제작 재료 · 메인 메뉴 제작소에서 소모품으로 제작'}}
     case 'part':return {name:'지뢰 부품',sub:'제작소 재료 · ₩'+fmt(it.v),ico:'부품',det:'지뢰 해체로 얻는 부품 · 메인 메뉴 제작소에서 부품 n개로 위력 n 지뢰 제작'};
@@ -1665,6 +1685,7 @@ function genItem(r,inCrate){
     /* 특수탄(sp)은 기본 탄약 후보에서 제외하지만, 직접 가져온 탄종이면 대체 탄약으로 나올 수 있습니다. */
     var cal=wpick(Object.keys(CAL).filter(function(k){return !CAL[k].sp}).map(function(k){return [k,CAL[k].hv?1:3]}));
     if(inCrate&&R&&R.myAmmo&&R.myAmmo.length&&Math.random()<.3)cal=pick(R.myAmmo).cal;
+    if(isGL(cal))return {k:'ammo',cal:cal,c:glC(r),n:ri(1,3)};
     return {k:'ammo',cal:cal,c:r,n:amN(cal)}}
   if(cat==='med'){var id=pick(MED_POOL[r]);return {k:'med',id:id,n:(id==='bandage'||id==='gauze')?ri(1,2):1}}
   if(cat==='weapon'){var wid=pick(WEAP_POOL[r]);var w=newW(wid,clamp(r,1,6));return {k:'weapon',w:w,r:r,n:1}}
@@ -2700,7 +2721,7 @@ function updDrones(dt){
     }
   }
 }
-var SCOUT_DET=200;
+var SCOUT_DET=160;
 var CDRONE_VIS=420;
 function hitCombat(d,dmg,hx,hy){
   if(d.hp<=0)return;
@@ -2714,16 +2735,16 @@ function updCombat(dt){
     if(d.t>=d.dur){cdrones.splice(i,1);toast('전투 드론 가동 종료','#e8a33a');continue}
     var bx=mouse.wx,by=mouse.wy,dd=dist(d.x,d.y,bx,by);
     if(dd>6){var st=Math.min(dd,Math.max(d.spd*.25,Math.min(d.spd,dd*5))*dt);d.x+=(bx-d.x)/dd*st;d.y+=(by-d.y)/dd*st}
-    var tg=null,bd=340;
+    var tg=null,bd=290;
     for(var j=0;j<scavs.length;j++){var sc=scavs[j];if(sc.dead||(sc.cage&&sc.cage.locked))continue;
       var q=dist(d.x,d.y,sc.x,sc.y);if(q<bd&&los(d.x,d.y,sc.x,sc.y)&&!(thrZ.length&&smokeBlock(d.x,d.y,sc.x,sc.y))){bd=q;tg=sc}}
     if(tg){
       var want=Math.atan2(tg.y-d.y,tg.x-d.x),df=want-d.ang;while(df>Math.PI)df-=TAU;while(df<-Math.PI)df+=TAU;
       d.ang+=clamp(df,-dt*9,dt*9);
       if(d.fireT<=0&&Math.abs(df)<.25){
-        d.fireT=.14;d.flash=.05;
+        d.fireT=.22;d.flash=.05;
         var an=d.ang+(Math.random()+Math.random()-1)*.06;
-        bullets.push({x:d.x+Math.cos(d.ang)*16,y:d.y+Math.sin(d.ang)*16,vx:Math.cos(an)*1000,vy:Math.sin(an)*1000,dmg:10,cls:3,dist:0,maxD:360,rng:360,src:'a',fall:.18});
+        bullets.push({x:d.x+Math.cos(d.ang)*16,y:d.y+Math.sin(d.ang)*16,vx:Math.cos(an)*1000,vy:Math.sin(an)*1000,dmg:7,cls:3,dist:0,maxD:360,rng:360,src:'a',fall:.18});
         sfxTick(1900,.04,.05,'square');alertScavs(d.x,d.y,450);
       }
     }
@@ -2747,7 +2768,7 @@ function drawCombat(now){
 function updScouts(dt){
   for(var i=scouts.length-1;i>=0;i--){
     var d=scouts[i];d.t+=dt;if(d.nc>0)d.nc-=dt;
-    if(d.t>=d.dur){scouts.splice(i,1);toast((d.bomb?'자폭 드론':'감시 드론')+' 가동 종료','#e8a33a');continue}
+    if(d.t>=d.dur){scouts.splice(i,1);toast((d.bomb?'지뢰 살포 드론':'감시 드론')+' 가동 종료','#e8a33a');continue}
     var bx=mouse.wx,by=mouse.wy;
     d.bx=bx;d.by=by;
     for(var mi=0;mi<R.mines.length;mi++){var hm=R.mines[mi];
@@ -2804,7 +2825,7 @@ function drawScouts(now){
     ctx.moveTo(d.x-Math.cos(ra)*12,d.y-Math.sin(ra)*12);ctx.lineTo(d.x+Math.cos(ra)*12,d.y+Math.sin(ra)*12);
     ctx.moveTo(d.x-Math.sin(ra)*12,d.y+Math.cos(ra)*12);ctx.lineTo(d.x+Math.sin(ra)*12,d.y-Math.cos(ra)*12);ctx.stroke();
     ctx.fillStyle=d.bomb?'#ffb27a':'#bfeeff';ctx.beginPath();ctx.arc(d.x,d.y,6.5,0,TAU);ctx.fill();ctx.strokeStyle=d.bomb?'#4a1a0a':'#14303a';ctx.lineWidth=1.5;ctx.stroke();
-    if(d.bomb)rngLabel(d.x,d.y-20,'B 기폭','rgba(255,200,120,1)');
+    if(d.bomb)rngLabel(d.x,d.y-20,'B 투하 ×'+d.load,'rgba(255,200,120,1)');
     ctx.fillStyle=d.bomb?'#e0533f':'#1f6f8a';ctx.beginPath();ctx.arc(d.x,d.y,2.6,0,TAU);ctx.fill();
   }
 }
@@ -2897,7 +2918,7 @@ function nearMine(rad){var b=null,bd=rad;for(var i=0;i<R.mines.length;i++){var m
 function bulletMine(sx,sy,ux,uy,th){for(var i=0;i<R.mines.length;i++){var m=R.mines[i];if(m.dead||!m.rev)continue;if(rayCircle(sx,sy,ux,uy,m.x,m.y,12,th)<th)return m}return null}
 /* 폭발: 반경 120, 중심 85 피해(플레이어, 방어구 무시) / 150(스캐브) → 가장자리로 갈수록 감소. 근처 지뢰는 연쇄 폭발, 소리는 1700 까지 */
 /* v78: 40mm 유탄 폭발 — 반경 GL_R · 중심 피해 dmg(탄 등급 반영) · 거리에 따라 감소 · 벽 철거 · 근처 지뢰 유폭 · 나도 피해(60%) */
-var GL_R=88;
+var GL_R=42;
 function glBlast(x,y,dmg){
   demolish(x,y,GL_R*.6);
   blasts.push({x:x,y:y,t:0,r:GL_R});spark(x,y,'#ffb347',16);spark(x,y,'#6b6258',8);
@@ -2912,7 +2933,7 @@ function glBlast(x,y,dmg){
   for(i=0;i<R.mines.length;i++){var o=R.mines[i];if(o.dead||o.fuse>=0)continue;if(dist(o.x,o.y,x,y)<GL_R*.7)o.fuse=.2+Math.random()*.2}
   alertScavs(x,y,1500);
   if(dp<GL_R&&(dp<30||los(x,y,P.x,P.y))){
-    var pd=Math.round(dmg*.6*(1-clamp((dp-18)/(GL_R-18),0,1)*.8));
+    var pd=BLAST_SELF;
     P.hp-=pd;P.hurt=.7;P.hitT=.9;P.hitDir=Math.atan2(P.y-y,P.x-x)+Math.PI;
     addFloater(P.x,P.y-20,'폭발 -'+pd,'#ff8a3a');toast('유탄 폭발에 휘말렸습니다 -'+pd,'#e0533f');
     if(P.hp<=0){P.hp=0;endRaid('mine')}
@@ -2935,10 +2956,10 @@ function explodeMine(m,by){
   if(m.ty&&m.ty!==C4_TY)landThr({id:MTY[m.ty],tx:m.x,ty:m.y,ang:0});
   alertScavs(m.x,m.y,1700);
   if(dp<BR&&(dp<30||los(m.x,m.y,P.x,P.y))){
-    var pd=Math.round(mineSelf(pw)*(1-clamp((dp-20)/(BR-20),0,1)*.8));
+    var pd=m.own?BLAST_SELF:Math.min(Math.round(mineSelf(pw)*(1-clamp((dp-20)/(BR-20),0,1)*.8)),Math.floor(P.maxhp*.75));
     P.hp-=pd;P.hurt=.7;P.hitT=.9;P.hitDir=Math.atan2(P.y-m.y,P.x-m.x)+Math.PI;
     addFloater(P.x,P.y-20,'폭발 -'+pd,'#ff8a3a');
-    toast(by==='p'?'지뢰를 밟았습니다! -'+pd:by==='r'?'C4 폭발에 휘말렸습니다 -'+pd:'지뢰 폭발에 휘말렸습니다 -'+pd,'#e0533f');
+    toast(by==='p'?'지뢰를 밟았습니다! -'+pd:'지뢰 폭발에 휘말렸습니다 -'+pd,'#e0533f');
     if(P.hp<=0){P.hp=0;endRaid('mine')}
   }
 }
@@ -2946,6 +2967,7 @@ function defT(m){return DEFUSE_T}
 /* 해체하면 지뢰를 통째로 인벤토리에 받는다(가득 차면 바닥에). 설치한 내 지뢰를 회수할 때도 같음 */
 function defuseMine(m){
   m.dead=true;R.dc=0;R.dcM=null;
+  if(m.drop){toast('살포한 소형 지뢰 제거 (회수 불가)','#79b665');sfxTick(700,.08,.08,'triangle');return}
   var own=!!m.own,it=own?mineItem(1,mkey(m)):partItem(ri(DEFUSE_PARTS[0],DEFUSE_PARTS[1])),cn=it.n;
   if(!own)R.mdef++;
   if(!addToInv(it))dropItem(it);
@@ -3001,12 +3023,21 @@ function drawMines(now,vx,vy,vw,vh){
     ctx.strokeStyle='rgba(255,220,150,'+(.8*(1-k))+')';ctx.lineWidth=3;ctx.stroke()});
   if(R.mw>0){ctx.strokeStyle='rgba(224,83,63,'+(R.mw/.2*.7)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(P.x,P.y,26+(1-R.mw/.2)*22,0,TAU);ctx.stroke()}
 }
+/* v100: 지뢰 살포 드론 — 원하는 곳에 박아 터뜨리는 대신, 소형 지뢰 DROP_N 개를 싣고 날다가 B 로 하나씩 떨어뜨린다.
+   소형 지뢰 위력 = 드론 위력의 절반(최소 1) · DROP_ARM 초 뒤 작동 · 스캐브가 밟아야 터짐 · 회수 불가 */
+var DROP_N=3,DROP_ARM=1.5;
+function dropPw(k){return Math.max(1,Math.round(mkPw(k)*.5))}
 function detonateC4(){
   var bi=-1,bd=1e9;
   for(var i=0;i<scouts.length;i++){var d=scouts[i];if(!d.bomb)continue;var q=dist(mouse.wx,mouse.wy,d.x,d.y);if(q<bd){bd=q;bi=i}}
-  if(bi<0){toast('전개한 자폭 드론이 없습니다','#e8a33a');return}
-  var dr=scouts.splice(bi,1)[0];
-  explodeMine({x:dr.x,y:dr.y,pw:mkPw(dr.bomb),ty:0,dead:false,own:true},'r');
+  if(bi<0){toast('전개한 지뢰 살포 드론이 없습니다','#e8a33a');return}
+  var dr=scouts[bi];
+  if(!pointFree(dr.x,dr.y,10)){toast('벽 위에는 투하할 수 없습니다','#e0533f');return}
+  var sp=dropPw(dr.bomb);
+  R.mines.push({x:dr.x,y:dr.y,r:20,rev:true,own:true,drop:true,dead:false,fuse:-1,arm:DROP_ARM,pw:sp,ty:0,ph:rnd(0,6)});
+  dr.load--;spark(dr.x,dr.y,'#ffb27a',8);sfxTick(520,.08,.08,'square');
+  if(dr.load<=0){scouts.splice(bi,1);toast('소형 지뢰 투하 (위력 '+sp+') · 적재 지뢰 소진 · 드론 귀환','#ff9a3c')}
+  else toast('소형 지뢰 투하 (위력 '+sp+') · '+DROP_ARM+'초 뒤 작동 · 남은 적재 '+dr.load+'개','#ff9a3c');
 }
 function mineCount(){var n=0;if(!P)return 0;for(var i=0;i<P.inv.length;i++)if(P.inv[i].k==='mine')n+=P.inv[i].n;return n}
 function minePws(){
@@ -3042,8 +3073,8 @@ function updPlant(dt){
   if(R.mines.some(function(m){return !m.dead&&dist(P.x,P.y,m.x,m.y)<46})){toast('다른 지뢰와 너무 가깝습니다','#e0533f');return}
   var pw=takeMine();
   if(mkTy(pw)===C4_TY){
-    scouts.push({x:P.x,y:P.y,bx:P.x,by:P.y,t:0,dur:90,spd:230,r:C4_VIS,ph:rnd(0,TAU),bomb:pw,nc:0});
-    toast('자폭 드론 전개 · 마우스를 따라다님 · B 로 기폭 · 남은 '+mineCount()+'개','#ff9a3c');sfxTick(900,.1,.08,'sine');
+    scouts.push({x:P.x,y:P.y,bx:P.x,by:P.y,t:0,dur:60,spd:230,r:C4_VIS,ph:rnd(0,TAU),bomb:pw,load:DROP_N,nc:0});
+    toast('지뢰 살포 드론 전개 · 마우스를 따라다님 · B 로 소형 지뢰 투하 ('+DROP_N+'개) · 남은 '+mineCount()+'개','#ff9a3c');sfxTick(900,.1,.08,'sine');
     if(!$('inv').hidden)renderInv();return;
   }
   R.mines.push({x:P.x,y:P.y,r:22,rev:true,own:true,dead:false,fuse:-1,arm:MINE_ARM_T,pw:mkPw(pw),ty:mkTy(pw),ph:rnd(0,6)});
@@ -3620,11 +3651,25 @@ function cycleThr(){
   toast('투척: '+THR[P.tSel].name+' ×'+thrInv()[P.tSel]+(l.length>1?' · Z 로 변경':''),'#4fd1c5');
   if(!$('inv').hidden)renderInv();
 }
-function smokeBlock(x1,y1,x2,y2){
+/* v96: 연막 = 시야를 막는 벽. 바깥에서는 연막 가장자리 SMOKE_PEN 까지만 보이고 그 너머는 안 보임,
+   연막 안에 들어가면 반경 SMOKE_IN 만 보임. 플레이어·스캐브 모두 같은 규칙 */
+var SMOKE_IN=60,SMOKE_PEN=26;
+var BLAST_SELF=20; /* v99: 폭발물(파편 수류탄·지뢰·C4·자폭 드론·유탄)에 내가 맞으면 거리·위력 상관없이 고정 20 */
+function smokeR(z){return z.r*.92*clamp(Math.min(z.t/.6,(z.dur-z.t)/1.5),0,1)}
+function smokeCut(x1,y1,dx,dy,len){
+  var lim=len;
   for(var i=0;i<thrZ.length;i++){var z=thrZ[i];if(z.kind!=='smoke'&&z.kind!=='heal')continue;
-    var dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy,t=l2>0?clamp(((z.x-x1)*dx+(z.y-y1)*dy)/l2,0,1):0;
-    if(dist(z.x,z.y,x1+dx*t,y1+dy*t)<z.r*(z.kind==='heal'?.5:.92))return true}
-  return false;
+    var rr=smokeR(z);if(rr<8)continue;
+    var fx=x1-z.x,fy=y1-z.y,c=fx*fx+fy*fy-rr*rr;
+    if(c<0){if(SMOKE_IN<lim)lim=SMOKE_IN;continue}
+    var b=fx*dx+fy*dy;if(b>=0)continue;
+    var disc=b*b-c;if(disc<=0)continue;
+    var t0=-b-Math.sqrt(disc)+SMOKE_PEN;if(t0<lim)lim=t0}
+  return lim;
+}
+function smokeBlock(x1,y1,x2,y2){
+  var dx=x2-x1,dy=y2-y1,l=Math.hypot(dx,dy);
+  return l>0&&smokeCut(x1,y1,dx/l,dy/l,l)<l;
 }
 var throwCharging=false;
 function beginThrow(){
@@ -3714,7 +3759,7 @@ function clusBoom(x,y,gen,T){
     if(s.hp<=0)killScav(s)}
   var dp=dist(x,y,P.x,P.y);
   if(dp<R0&&(dp<26||los(x,y,P.x,P.y))){
-    var pd=Math.round(D0*.5*(1-clamp((dp-14)/(R0-14),0,1)*.7));
+    var pd=BLAST_SELF;
     P.hp-=pd;P.hurt=.5;P.hitT=.6;P.hitDir=Math.atan2(P.y-y,P.x-x)+Math.PI;addFloater(P.x,P.y-20,'파편 -'+pd,'#ff8a3a');
     if(P.hp<=0){P.hp=0;endRaid('dead');return}}
   alertScavs(x,y,gen?450:900);
@@ -3751,7 +3796,7 @@ function landThr(g){
     blasts.push({x:x,y:y,t:0,r:t.r*.7});
     for(i=0;i<scavs.length;i++){var s=scavs[i];if(s.dead)continue;
       var ds=dist(x,y,s.x,s.y);if(ds>=t.r||!los(x,y,s.x,s.y)||s.stunImm>0)continue;
-      s.stunT=Math.max(s.stunT||0,s.boss||s.warden||s.captain?t.stun*.5:t.stun);s.burst=0;s.state=s.state==='patrol'?'search':s.state;addFloater(s.x,s.y-34,'섬광 '+t.stun+'초','#ffffff')}
+      var stn=t.stun*(1-.5*ds/t.r)*(s.boss||s.warden||s.captain?.5:1);s.stunT=Math.max(s.stunT||0,stn);s.burst=0;s.state=s.state==='patrol'?'search':s.state;addFloater(s.x,s.y-34,'섬광 '+stn.toFixed(1)+'초','#ffffff')}
     var dp=dist(x,y,P.x,P.y);if(dp<t.r+40&&los(x,y,P.x,P.y)){P.flashT=Math.max(P.flashT||0,clamp(2.4-dp/t.r*1.4,.8,2.4));toast('섬광탄에 눈이 멀었습니다','#e8a33a')}
     alertScavs(x,y,900);
     return;
@@ -3778,7 +3823,7 @@ function updThrow(dt){
     if(z.tick<=0){z.tick=.5;doTick=true}
     for(j=0;j<scavs.length;j++){var s=scavs[j];if(s.dead)continue;
       if(dist(z.x,z.y,s.x,s.y)>=z.r)continue;
-      if(z.kind==='frost')s.frostT=.7;
+      if(z.kind==='frost'){s.frostT=.7;if(doTick&&T.dps){var fd=Math.round(T.dps*.5);s.hp-=fd;s.hpShow=2;addFloater(s.x,s.y-18,'-'+fd,'#9ad0e8');if(s.hp<=0)killScav(s)}}
       else if((z.kind==='gas'||z.kind==='rad')&&doTick){
         var dm=Math.round(T.dps*.5);s.hp-=dm;s.hpShow=2;addFloater(s.x,s.y-18,'-'+dm,'#'+(z.kind==='gas'?'b4e04a':'5fe0c0'));
         if(s.state==='patrol'){s.state='search';s.target={x:z.x+rnd(-200,200),y:z.y+rnd(-200,200)};s.searchT=0}
@@ -3795,7 +3840,7 @@ function updThrow(dt){
         }
       }
       else if((z.kind==='gas'||z.kind==='rad')&&doTick&&!(P.filtT>0)){
-        var pd=Math.round(T.dps*.35);P.hp-=pd;P.hurt=.3;addFloater(P.x,P.y-20,'-'+pd,'#'+(z.kind==='gas'?'b4e04a':'5fe0c0'));
+        var pd=Math.round(T.dps*.22);P.hp-=pd;P.hurt=.3;addFloater(P.x,P.y-20,'-'+pd,'#'+(z.kind==='gas'?'b4e04a':'5fe0c0'));
         if(P.hp<=0){P.hp=0;endRaid('dead');return}}
     }
   }
@@ -4120,6 +4165,7 @@ function lootAdd(it){
   return addToInv(it);
 }
 function addToInv(it){
+  normAmmo(it);
   var ms=maxStack(it),i;
   if(ms>1){for(i=0;i<P.inv.length;i++){var s=P.inv[i];if(sameStack(s,it)&&s.n<ms){var m=Math.min(ms-s.n,it.n);s.n+=m;it.n-=m;if(it.n<=0)return true}}}
   while(it.n>0){
@@ -4411,7 +4457,7 @@ function scavShoot(s,d,dist2){
 }
 function updScav(s,dt){
   if(s.dead)return;
-  if(s.frostT>0){s.frostT-=dt;dt*=.4}
+  if(s.frostT>0){s.frostT-=dt;dt*=.28}
   if(s.cage&&s.cage.locked){s.spd=0;s.aimT=0;s.exposed=false;s.state='patrol';if(s.hpShow>0)s.hpShow-=dt;return}
   if(s.dummy){s.spd=0;s.aimT=0;s.exposed=false;if(s.hpShow>0)s.hpShow-=dt;if(s.flash>0)s.flash-=dt;return}
   s.noise=s.spd>110?300:s.spd>40?150:40;
@@ -4734,6 +4780,7 @@ function calcMyAmmo(){
   return out;
 }
 function startRaid(){
+  normSave();
   if(tutI>=0){tutI=-1;tutClear();$('tutCard').hidden=true}if($('tutAsk'))$('tutAsk').hidden=true;
   fixLD();
   var m=MODES[SAVE.mode]||MODES.n;
@@ -5070,6 +5117,7 @@ function computeVis(){
   for(i=0;i<N;i++){
     var a=i/N*TAU,dx=Math.cos(a),dy=Math.sin(a),t=VIS_R;
     for(var j=0;j<cand.length;j++){var h=rayRect(P.x,P.y,dx,dy,cand[j],t);if(h<t)t=h}
+    if(thrZ.length)t=smokeCut(P.x,P.y,dx,dy,t);
     poly.push(P.x+dx*(t+1),P.y+dy*(t+1));
   }
   R.visPoly=poly;
@@ -5105,7 +5153,7 @@ function darkCone(c,base){
 }
 function canSee(x,y){
   if(R.rv)for(var q=0;q<R.rv.length;q++){var rs=R.rv[q];if(Math.abs(rs.x-x)<=rs.r&&Math.abs(rs.y-y)<=rs.r&&dist(x,y,rs.x,rs.y)<=rs.r&&los(rs.x,rs.y,x,y,rs.cand))return true}
-var d=dist(x,y,P.x,P.y);if(d>VIS_R)return false;if(R.map.lab&&d>darkReach(LAB_R,x,y)&&!labLit(x,y))return false;if(R.map.port&&d>darkReach(PORT_R,x,y)&&!portLit(x,y))return false;return los(P.x,P.y,x,y,R.cand)}
+var d=dist(x,y,P.x,P.y);if(d>VIS_R)return false;if(R.map.lab&&d>darkReach(LAB_R,x,y)&&!labLit(x,y))return false;if(R.map.port&&d>darkReach(PORT_R,x,y)&&!portLit(x,y))return false;if(thrZ.length&&d>0&&smokeCut(P.x,P.y,(x-P.x)/d,(y-P.y)/d,d)<d)return false;return los(P.x,P.y,x,y,R.cand)}
 function drawHuman(x,y,ang,body,head,wlen,flash,isP){
   ctx.save();ctx.translate(x,y);ctx.rotate(ang);
   ctx.strokeStyle='#0c0e0b';ctx.lineWidth=4;ctx.lineCap='round';
@@ -5409,7 +5457,7 @@ function ldValue(){
   var v=0;
   SLOTS.forEach(function(s){var it=LD[s[0]]?stashFind(LD[s[0]]):null;if(it)v+=itemValue(it)});
   var need=neededCals();
-  Object.keys(need).forEach(function(c){v+=ROUND_VAL[LD.ammo[c].c]*CAL[c].rv*LD.ammo[c].n});
+  Object.keys(need).forEach(function(c){v+=roundVal(c,LD.ammo[c].c)*LD.ammo[c].n});
   MEDNAMES.forEach(function(m){v+=MEDS[m].val*LD.med[m]});
   ldMineList().forEach(function(l){v+=mineVal(l.pw)*l.n});
   Object.keys(THR).forEach(function(id){v+=THR[id].val*(LD.tp[id]||0)});
@@ -5423,7 +5471,7 @@ function fixLD(){
     if(!it||used[it.uid]||!cands(k).some(function(c){return c.uid===it.uid}))LD[k]=0;else used[it.uid]=1;
   });
   Object.keys(CAL).forEach(function(c){
-    var a=LD.ammo[c];a.c=clamp(+a.c||1,1,6);
+    var a=LD.ammo[c];a.c=clamp(+a.c||1,1,6);if(isGL(c))a.c=glC(a.c);
     if(stashCount(c,a.c)<=0){var bc=0,bn=0;for(var k=1;k<=6;k++){var q=stashCount(c,k);if(q>bn){bn=q;bc=k}}if(bc)a.c=bc}
     var av=stashCount(c,a.c);
     a.n=clamp(Math.floor(+a.n)||0,0,av);
@@ -5469,7 +5517,7 @@ function shopList(cat){
   var out=[],c;
   if(cat==='gear'){['helmet','armor','pack','rig'].forEach(function(t){for(c=1;c<=6;c++)out.push(gearItem(t,mkGear(t,c)))})}
   else if(cat.indexOf('gun:')===0){Object.keys(WEAP).filter(function(id){return shopWeaponGroup(WEAP[id])===cat.slice(4)}).sort(function(a,b){return WEAP[a].val-WEAP[b].val}).forEach(function(id){out.push({k:'weapon',w:{id:id,mag:{n:0,cls:1},sel:1},r:WEAP[id].rar,n:1})})}
-  else if(cat==='ammo'){var first=equippedCal();Object.keys(CAL).sort(function(a,b){return (a===first?-1:b===first?1:CAL[a].name.localeCompare(CAL[b].name,'ko'))}).forEach(function(cal){out.push({k:'ammo',cal:cal,c:HUB.ammoGrade,n:CAL[cal].gl?4:CAL[cal].sh?16:CAL[cal].hv?10:30})})}
+  else if(cat==='ammo'){var first=equippedCal();Object.keys(CAL).sort(function(a,b){return (a===first?-1:b===first?1:CAL[a].name.localeCompare(CAL[b].name,'ko'))}).forEach(function(cal){out.push({k:'ammo',cal:cal,c:CAL[cal].gl?glC(HUB.ammoGrade):HUB.ammoGrade,n:CAL[cal].gl?2:CAL[cal].sh?16:CAL[cal].hv?10:30})})}
   else MEDNAMES.forEach(function(m){if(!MEDS[m].craft)out.push({k:'med',id:m,n:1})});
   return out;
 }
@@ -5590,7 +5638,7 @@ function renderStash(){
   Object.keys(CAL).forEach(function(c){
     if(!need[c])return;
     var a=LD.ammo[c],cl='',qt='',any=false,k;
-    for(k=1;k<=6;k++){var st=stashCount(c,k);if(st>0){any=true;cl+=chipHtml('ammoC',c,k,ROMAN[k]+' ×'+st,a.c===k,RC[k])}}
+    for(k=1;k<=6;k++){var st=stashCount(c,k);if(st>0){any=true;cl+=chipHtml('ammoC',c,k,(isGL(c)?GL_GR[glC(k)]:ROMAN[k])+' ×'+st,a.c===k,RC[k])}}
     if(!any){h+='<div class="ammorow"><span class="lb">'+CAL[c].name+' 총 탄약</span><div class="chips"><span style="color:var(--mute);font-size:12px;align-self:center">창고에 탄약 없음 · 상점에서 구매</span></div></div>';return}
     var av=stashCount(c,a.c);
     QTY[c].forEach(function(q){if(q<=av)qt+=chipHtml('ammoN',c,q,q+'발',a.n===q)});
@@ -5882,7 +5930,7 @@ function renderCraft(){
   var craftTypes=[];for(var ty=1;ty<MTY.length;ty++)craftTypes.push(ty);
   craftTypes.sort(function(a,b){var ca=stashMineBy(pw)>=1&&stashThrCount(MTY[a])>=1,cb=stashMineBy(pw)>=1&&stashThrCount(MTY[b])>=1;return (cb?1:0)-(ca?1:0)}).forEach(function(ty){
     var tid=MTY[ty],tt=THR[tid],hb=stashMineBy(pw),ht=stashThrCount(tid),sk=pw+100*ty;
-    h+='<div class="sr" style="--rc:'+RC[mineItem(1,sk).r]+'"><span class="t">'+(ty===C4_TY?'드론':'지뢰')+'</span><span class="n">'+mineLabel(sk)+'<small>'+(ty===C4_TY?'G 로 전개하면 마우스를 따라다니는 자폭 드론 · B 로 기폭 · 폭발 피해 100%':'폭발 후 '+tt.desc)+'</small><small>위력 '+pw+' 대인지뢰 ×1 (보유 '+hb+') + '+tt.name+' ×1 (보유 '+ht+')</small></span><span class="btns">';
+    h+='<div class="sr" style="--rc:'+RC[mineItem(1,sk).r]+'"><span class="t">'+(ty===C4_TY?'드론':'지뢰')+'</span><span class="n">'+mineLabel(sk)+'<small>'+(ty===C4_TY?'G 로 전개하면 마우스를 따라다니는 살포 드론 · B 로 소형 지뢰 3개 투하(위력 절반)':'폭발 후 '+tt.desc)+'</small><small>위력 '+pw+' 대인지뢰 ×1 (보유 '+hb+') + '+tt.name+' ×1 (보유 '+ht+')</small></span><span class="btns">';
     [1,3].forEach(function(q){h+='<button type="button" class="btn sm primary" data-act="craftS" data-k="'+ty+'" data-v="'+q+'"'+(hb<q||ht<q?' disabled':'')+'>×'+q+'</button>'});
     var mxs=Math.min(hb,ht);h+='<button type="button" class="btn sm primary" data-act="craftS" data-k="'+ty+'" data-v="'+mxs+'"'+(mxs<1?' disabled':'')+'>최대 ×'+mxs+'</button>';
     h+='</span></div>';
@@ -5970,7 +6018,7 @@ window.XZG={
   addCash:function(n){n=Math.round(+n)||0;SAVE.cash=Math.max(0,SAVE.cash+n);persist();try{renderHub()}catch(e){}}
 };
 function renderHub(sig){
-  relief();
+  normSave();relief();
   var tabs=[['stash','보관함 · 출격 준비'],['shop','상점'],['sell','판매처'],['craft','제작소']];
   $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="tab" role="tab" data-act="tab" data-v="'+t[0]+'" aria-selected="'+(HUB.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'<span class="cash">₩'+fmt(SAVE.cash)+'</span>';
   var old=$('hubBody').querySelector('.list'),st=old?old.scrollTop:0;
@@ -6214,7 +6262,7 @@ var TDEF=[
 ['X','KeyX','지뢰종류','-','right:10px;bottom:134px;width:62px','tap'],
 ['V','KeyV','V','칼공격','right:10px;bottom:196px;width:64px','tap'],
 ['H','KeyH','H','치료','right:82px;bottom:196px;width:64px','tap'],
-['B','KeyB','B','드론기폭','right:10px;bottom:258px;width:64px','tap'],
+['B','KeyB','B','지뢰투하','right:10px;bottom:258px;width:64px','tap'],
 ['N','KeyN','N','드론소음','right:80px;bottom:258px;width:64px','tap'],
 ['E','KeyE','E','수색','left:8px;bottom:10px;width:64px','hold'],
 ['F','KeyF','F','획득','left:8px;bottom:72px;width:64px','tap'],
