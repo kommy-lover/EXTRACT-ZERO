@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v90</title>
+<title>Extract Zero v91</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -5986,6 +5986,7 @@ $('settings').addEventListener('change',function(e){
   var t=e.target;if(!t.dataset||!t.dataset.sv)return;
   if(t.dataset.sv==='gv')sfxShot(1500,.14,.12);else sfxTick(620,.12,.1,'square');
 });
+$('quickStart').addEventListener('click',function(){if(state==='menu')startRaid()});
 $('setBtn').addEventListener('click',openSettings);
 $('pSet').addEventListener('click',openSettings);
 
