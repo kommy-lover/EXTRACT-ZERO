@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection',function(e){show('promise: '+(e.rea
 .slotstrip span.thr{border-color:#e8583f;color:#ffb09a;margin-left:8px}
 .slotstrip span.mine{border-color:#e8a33a;color:#f2c880}
 </style></head><body>
-<title>Extract Zero v86</title>
+<title>Extract Zero v87</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>[hidden]{display:none!important}
 .zoomrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px;border:1px solid var(--line);background:var(--panel2)}
@@ -1352,7 +1352,12 @@ var PREF={ar:380,m14:480,dmr:560,shot:200,deagle:300,glock:260,m1911:280,mac10:2
 /* ============ SAVE / STASH / LOADOUT ============ */
 var STASH_BASE=100,STASH_STEP=20,STASH_PRICE=1500,SELL=.7,BUY=1.25;
 function stashCap(){return Math.max(STASH_BASE,Math.round(+SAVE.cap)||STASH_BASE)}
-function expandPrice(){return STASH_PRICE}
+function expandPrice(){var n=Math.max(0,Math.round((stashCap()-STASH_BASE)/STASH_STEP));return 25000+12500*n}
+function stashWarn(){
+  var left=stashCap()-SAVE.stash.length;if(left>50)return '';
+  return left<=0?'<div class="rowbar" style="color:#fff;background:#8c2a22;border:1px solid #e0533f;padding:6px 8px;border-radius:4px">⚠ 창고가 가득 찼습니다. 새 물품을 가져와도 자동 판매됩니다. 정리하거나 확장하세요</div>'
+   :'<div class="rowbar" style="color:#ffd9a0;background:#4a3515;border:1px solid #e8a33a;padding:6px 8px;border-radius:4px">⚠ 창고 남은 칸 '+left+'칸 (50칸 이하). 곧 가득 찹니다</div>'
+}
 var QTY={g40:[0,2,4,6,9,12,18],c556:[0,30,60,90,120,180,240],c762:[0,20,40,60,100,140],g12:[0,8,16,24,32,48],a50:[0,14,28,42,56],c9:[0,30,60,90,120,180,240],c45:[0,25,50,75,100,150],c545:[0,30,60,90,120,180,240]};
 Object.keys(CAL).forEach(function(c){if(!QTY[c])QTY[c]=CAL[c].hv?[0,5,10,20,30,50]:CAL[c].sh?[0,8,16,24,32,48]:[0,30,60,90,120,180,240]});
 var SAVE={cap:100,raids:0,ext:0,dead:0,best:0,total:0,cash:30000,stash:null,mode:'n',map:'o',ld:null,uid:1};
@@ -4819,7 +4824,7 @@ function endRaid(kind){if(state==='raid'&&(kind==='dead'||kind==='gas'||kind==='
     if(!SAVE.kitRem)SAVE.kitRem={};Object.keys(P.kitRem||{}).forEach(function(m){if(P.kitRem[m]>0&&medCount(m)>0)SAVE.kitRem[m]=P.kitRem[m]});
     var bk=bankRaid(),list=bk.list;
     h='<h2 class="ok">탈출 성공</h2><p class="why">탈출 지점('+(R.exitId||'')+')으로 무사히 빠져나왔습니다. 모든 장비가 보관함에 반입되었습니다.</p>'+
-      (bk.soldN?'<p class="why" style="color:#e8a33a">보관함이 가득 차 '+bk.soldN+'개를 자동 판매했습니다 (+₩'+fmt(bk.sold)+')</p>':'')+
+      (bk.soldN?'<p class="why" style="color:#e8a33a">보관함이 가득 차 '+bk.soldN+'개를 자동 판매했습니다 (+₩'+fmt(bk.sold)+')</p>':'')+stashWarn().replace('class="rowbar"','class="why"')+
       '<div class="sum"><span>맵</span><b>'+R.map.name+'</b><span>작전 모드</span><b style="color:'+m.col+'">'+m.name+'</b><span>생존 시간</span><b>'+tm+'</b><span>스캐브 처치</span><b>'+P.kills+'</b><span>가져온 장비 총가치</span><b>₩'+fmt(val)+'</b><span>출격 대비 손익</span><b style="color:'+(gain>=0?'#79b665':'#e0533f')+'">'+(gain>=0?'+':'−')+'₩'+fmt(Math.abs(gain))+'</b></div>'+
       '<div class="sub" style="margin-top:0">가져온 물품</div><div class="carry">'+list.slice(0,40).map(function(it){var inf=itemInfo(it);return '<div><span style="color:'+RC[itemRar(it)]+'">'+inf.name+(it.n>1?' ×'+it.n:'')+'</span><span>'+inf.sub+'</span></div>'}).join('')+(list.length>40?'<div><span>… 외 '+(list.length-40)+'개</span><span></span></div>':'')+'</div>'+
       '<div class="btns"><button class="btn primary" id="again" type="button">보관함으로</button></div>';
@@ -5587,7 +5592,7 @@ function renderStash(){
   var list=SAVE.stash.filter(function(it){return f==='all'||it.k===f||(f==='mine'&&(it.k==='part'||it.k==='mat'||it.k==='thr'))});
   list.sort(function(a,b){return itemRar(b)-itemRar(a)||itemValue(b)-itemValue(a)});
   var worth=0,vcnt=0;SAVE.stash.forEach(function(it){worth+=itemValue(it)*SELL;if(it.k==='val')vcnt++});
-  h+='<div class="pane"><h4>창고<small>'+SAVE.stash.length+' / '+stashCap()+' · 판매가치 ₩'+fmt(worth)+'</small></h4>';
+  h+='<div class="pane"><h4>창고<small>'+SAVE.stash.length+' / '+stashCap()+' · 판매가치 ₩'+fmt(worth)+'</small></h4>'+stashWarn();
   h+='<div class="chips" style="margin-bottom:8px">'+cats.map(function(c){return chipHtml('filt','f',c[0],c[1],f===c[0])}).join('')+'</div>';
   h+='<div class="rowbar"><span>보관함 확장 +'+STASH_STEP+'칸 (현재 '+stashCap()+'칸)</span><button type="button" class="btn sm" data-act="expand"'+(SAVE.cash<expandPrice()?' disabled':'')+'>확장 ₩'+fmt(expandPrice())+'</button></div>';
   h+='<div class="rowbar"><span>장착·담기로 왼쪽에 챙기고, 현금화는 판매처에서</span><button type="button" class="btn sm" data-act="tab" data-v="sell">판매처로 이동 →</button></div>';
@@ -5652,7 +5657,7 @@ function renderSell(){
   SAVE.stash.forEach(function(it){worth+=sellPriceAll(it);if(it.k==='val'){vcnt++;vtot+=sellPriceAll(it)}});
   var h='<div class="pane"><h4>판매처<small>암시장 매입상 · 시세의 '+Math.round(SELL*100)+'%로 매입</small></h4>';
   h+='<div class="hint" style="margin:0 0 8px">보관함 물건은 여기서만 팔 수 있습니다. 여러 개를 골라 한 번에 팔거나 줄마다 따로 팔 수 있어요. 출격 예정 장비는 일괄 선택에서 빠집니다.</div>';
-  h+='<div class="rowbar"><span>보관함 '+SAVE.stash.length+' / '+stashCap()+' · 전체 매입가 ₩'+fmt(worth)+'</span><button type="button" class="btn sm" data-act="sellval"'+(vcnt?'':' disabled')+'>물품 전부 판매 ('+vcnt+') ₩'+fmt(vtot)+'</button></div>';
+  h+=stashWarn()+'<div class="rowbar"><span>보관함 '+SAVE.stash.length+' / '+stashCap()+' · 전체 매입가 ₩'+fmt(worth)+'</span><button type="button" class="btn sm" data-act="sellval"'+(vcnt?'':' disabled')+'>물품 전부 판매 ('+vcnt+') ₩'+fmt(vtot)+'</button></div>';
   h+='<div class="chips" style="margin-bottom:8px">'+SFILT.map(function(c){var n=SAVE.stash.filter(function(it){return sellMatch(it,c[0])}).length;return chipHtml('sfilt','f',c[0],c[1]+' '+n,f===c[0])}).join('')+'</div>';
   var conf=HUB.confirm==='sel';
   h+='<div class="rowbar"><span>선택 '+uids.length+'종 · ₩'+fmt(selTot)+'</span><span class="btns" style="margin:0"><button type="button" class="btn sm" data-act="sselAll" data-v="1"'+(list.length?'':' disabled')+'>이 분류 전체 선택</button><button type="button" class="btn sm" data-act="sselAll" data-v="0"'+(uids.length?'':' disabled')+'>선택 해제</button><button type="button" class="btn sm primary" data-act="sellSel"'+(uids.length?'':' disabled')+'>'+(conf?'정말 판매? ₩'+fmt(selTot):'선택 판매 ₩'+fmt(selTot))+'</button></span></div>';
@@ -5672,7 +5677,7 @@ function renderShop(){
   var cats=[['gear','방어구·배낭'],['gun:rifle','소총'],['gun:smg','기관단총'],['gun:pistol','권총'],['gun:shotgun','산탄총'],['gun:sniper','저격총'],['gun:lmg','기관총'],['gun:gl','유탄발사기'],['ammo','탄약'],['med','의료']];
   var list=shopList(HUB.shop);
   var h='<div class="chips" style="margin-bottom:8px">'+cats.map(function(c){return chipHtml('shop','s',c[0],c[1],HUB.shop===c[0])}).join('')+'</div>';
-  h+='<div class="rowbar"><span>보관함 '+SAVE.stash.length+' / '+stashCap()+'</span><span>구매가 시세 125% · 판매는 판매처(70%)</span></div>';
+  h+=stashWarn()+'<div class="rowbar"><span>보관함 '+SAVE.stash.length+' / '+stashCap()+'</span><span>구매가 시세 125% · 판매는 판매처(70%)</span></div>';
   if(HUB.shop==='ammo'){
     h+='<div class="hint" style="margin:0 0 8px">장착 무기 탄종이 맨 위에 표시됩니다. 탄종마다 한 줄에서 1~6급을 선택해 구매하세요.</div><div class="lrw"><span class="lb">탄 등급 선택</span><div class="chips">';
     for(var g=1;g<=6;g++)h+=chipHtml('ammoGrade','g',g,RN[g]+'급',HUB.ammoGrade===g);
